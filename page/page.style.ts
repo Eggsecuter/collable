@@ -1,15 +1,17 @@
-import { background, child, color, display, height, insetInline, margin, marginTop, padding, position, rem, root, top } from "@acryps/style";
+import { alignItems, background, child, color, display, fontSize, gap, height, insetInline, margin, marginTop, padding, position, rem, root, top } from "@acryps/style";
+import { iconFont, icons } from "./.built/icons";
 import { mediumFont } from "./assets/font/index.style";
-import { colorBackground, colorBackgroundDimmed, colorText } from "./index.style";
+import { colorBackground, colorBackgroundDimmed, colorPrimary, colorText, fontSizeNavigation } from "./index.style";
 
-const headerInnerHeight = rem(5);
-const headerPadding = rem(0.5);
+const headerInnerHeight = rem(3);
+const headerBlockPadding = rem(1);
+const headerInlinePadding = rem(2);
 
-const headerTotalHeight = headerInnerHeight.add(headerPadding.multiply(2));
+const headerTotalHeight = headerInnerHeight.add(headerBlockPadding.multiply(2));
 
 export const applicationStyle = () => root() (
-	// icons(),
-	// iconFont,
+	icons(),
+	iconFont,
 	mediumFont,
 
 	color(colorText),
@@ -30,15 +32,27 @@ export const applicationStyle = () => root() (
 
 				display('flex'),
 				height(headerInnerHeight),
-				padding(headerPadding),
+				padding(headerBlockPadding, headerInlinePadding),
 
-				background(colorBackground)
+				gap(rem(1)),
+				alignItems('center'),
+
+				background(colorBackground),
+
+				child('ui-brand')(
+					display('flex'),
+					gap(rem(0.5)),
+					alignItems('center'),
+
+					color(colorPrimary),
+					fontSize(fontSizeNavigation)
+				)
 			),
 
 			child('ui-main')(
 				display('block'),
 				marginTop(headerTotalHeight),
-				padding(rem(3))
+				padding(headerInlinePadding)
 			)
 		)
 	)

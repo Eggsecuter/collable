@@ -1,5 +1,5 @@
 import { Component } from "@acryps/page";
-// import { brandIcon } from "./.built/icons";
+import { brandIcon } from "./.built/icons";
 
 export class PageComponent extends Component {
 	render(child) {
@@ -10,7 +10,7 @@ export class PageComponent extends Component {
 		return <ui-page>
 			<ui-header>
 				<ui-brand>
-					{/*{brandIcon()}*/}
+					{brandIcon()}
 					<ui-name>Collable</ui-name>
 				</ui-brand>
 			</ui-header>

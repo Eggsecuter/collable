@@ -27,4 +27,6 @@ export const fontSizeTitle = rem(1.5);
 export const fontSizeSubtitle = rem(1.2);
 export const fontSizeDetail = rem(0.8);
 
+export const fontSizeNavigation = rem(1.2);
+
 // reusable style components

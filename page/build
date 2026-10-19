@@ -1,0 +1,54 @@
+const { build, context } = require('esbuild');
+const { execSync } = require('child_process');
+const { readFileSync, writeFileSync, mkdirSync } = require('fs');
+const pageCompile = require('@acryps/esbuild-page');
+
+const mode = process.argv[2];
+const commit = execSync('git rev-parse HEAD').toString();
+
+mkdirSync('.built', { recursive: true });
+
+// replace js factory
+const typescriptConfiguration = JSON.parse(readFileSync('tsconfig.json'));
+const typescriptConfigurationLocation = '.built/.tsconfig.json';
+typescriptConfiguration.compilerOptions.jsxFactory = 'this.createElement';
+writeFileSync(typescriptConfigurationLocation, JSON.stringify(typescriptConfiguration));
+
+const options = {
+	entryPoints: ['index.ts'],
+	bundle: true,
+	minify: true,
+	sourcemap: true,
+	splitting: true,
+	format: 'esm',
+	chunkNames: 'fragment/[hash]',
+	target: 'es2020',
+	outdir: '.built',
+	plugins: [pageCompile],
+	tsconfig: typescriptConfigurationLocation,
+	define: {
+		buildMode: JSON.stringify(mode),
+		buildDate: JSON.stringify(new Date().toISOString()),
+		buildCommit: JSON.stringify(commit)
+	}
+}
+
+switch (mode) {
+	case 'bundle': {
+		options.sourcemap = false;
+
+		build(options);
+
+		break;
+	}
+
+	case 'watch': {
+		context(options).then(build => build.watch());
+
+		break;
+	}
+
+	default: {
+		throw new Error(`Unknown build mode '${mode}'`);
+	}
+}

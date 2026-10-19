@@ -1,0 +1,14 @@
+{
+	"compilerOptions": {
+		"module": "es6",
+		"moduleResolution": "node",
+		"target": "es6",
+		"downlevelIteration": true,
+		"jsx": "react",
+		"jsxFactory": "Component.createElement",
+		"lib": [
+			"esnext",
+			"dom"
+		]
+	}
+}

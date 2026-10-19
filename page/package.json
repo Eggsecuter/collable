@@ -1,0 +1,20 @@
+{
+	"scripts": {
+		"watch": "npm run build:glyph && node build watch",
+		"build": "npm run build:glyph && node build bundle",
+		"build:glyph": "glyph assets/icons .built/icons /assets/icons",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@acryps/glyph": "^0.1.1",
+		"@acryps/page": "^1.8.2",
+		"@acryps/page-default-directives": "^1.0.3",
+		"@acryps/page-observable": "^1.4.1",
+		"@acryps/style": "^0.29.0"
+	},
+	"devDependencies": {
+		"@acryps/esbuild-page": "^0.0.1",
+		"esbuild": "^0.27.4",
+		"typescript": "^5.8.3"
+	}
+}

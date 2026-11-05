@@ -4,10 +4,13 @@ import { ArtistManager } from "././../artist/manager";
 import { ArtistViewModel } from "././../artist/model";
 import { ArtistService } from "././../artist/service";
 import { QuizManager } from "././../quiz/manager";
+import { ArchiveDayViewModel } from "././../quiz/model";
+import { ArchiveGuessViewModel } from "././../quiz/model";
 import { GuessViewModel } from "././../quiz/model";
 import { QuizService } from "././../quiz/service";
 import { Artist } from "./../managed/database";
 import { Guess } from "./../managed/database";
+import { DailyArtist } from "./../managed/database";
 
 Inject.mappings = {
 	"ArtistService": {
@@ -46,6 +49,24 @@ export class ManagedServer extends BaseServer {
 			{},
 			inject => inject.construct(QuizService),
 			(controller, params) => controller.getDay(
+				
+			)
+		);
+
+		this.expose(
+			"JmaWJuZjl4eXdvNmMyNHlkYXFqMXVpN2",
+			{},
+			inject => inject.construct(QuizService),
+			(controller, params) => controller.getArchiveDays(
+				
+			)
+		);
+
+		this.expose(
+			"gzNzhyaH14c2RibTowcmRxeHY5ZWIzNG",
+			{},
+			inject => inject.construct(QuizService),
+			(controller, params) => controller.getArchiveGuesses(
 				
 			)
 		);
@@ -241,6 +262,134 @@ ViewModel.mappings = {
 
 			"artist" in viewModel && (model.artist.id = viewModel.artist ? viewModel.artist.id : null);
 			"graphIndex" in viewModel && (model.graphIndex = viewModel.graphIndex === null ? null : +viewModel.graphIndex);
+			"id" in viewModel && (model.id = viewModel.id === null ? null : `${viewModel.id}`);
+			"result" in viewModel && (model.result = viewModel.result === null ? null : `${viewModel.result}`);
+
+			return model;
+		}
+	},
+	[ArchiveDayViewModel.name]: class ComposedArchiveDayViewModel extends ArchiveDayViewModel {
+		async map() {
+			return {
+				day: this.$$model.day,
+				id: this.$$model.id
+			}
+		};
+
+		static get items() {
+			return this.getPrefetchingProperties(ViewModel.maximumPrefetchingRecursionDepth, []);
+		}
+
+		static getPrefetchingProperties(level: number, parents: string[]) {
+			let repeats = false;
+
+			for (let size = 1; size <= parents.length / 2; size++) {
+				if (!repeats) {
+					for (let index = 0; index < parents.length; index++) {
+						if (parents[parents.length - 1 - index] == parents[parents.length - 1 - index - size]) {
+							repeats = true;
+						}
+					}
+				}
+			}
+
+			if (repeats) {
+				level--;
+			}
+
+			if (!level) {
+				return {};
+			}
+
+			return {
+				day: true,
+				id: true
+			};
+		};
+
+		static toViewModel(data) {
+			const item = new ArchiveDayViewModel(null);
+			"day" in data && (item.day = data.day === null ? null : new Date(data.day));
+			"id" in data && (item.id = data.id === null ? null : `${data.id}`);
+
+			return item;
+		}
+
+		static async toModel(viewModel: ArchiveDayViewModel) {
+			let model: DailyArtist;
+
+			if (viewModel.id) {
+				model = await ViewModel.globalFetchingContext.findSet(DailyArtist).find(viewModel.id)
+			} else {
+				model = new DailyArtist();
+			}
+
+			"day" in viewModel && (model.day = viewModel.day === null ? null : new Date(viewModel.day));
+			"id" in viewModel && (model.id = viewModel.id === null ? null : `${viewModel.id}`);
+
+			return model;
+		}
+	},
+	[ArchiveGuessViewModel.name]: class ComposedArchiveGuessViewModel extends ArchiveGuessViewModel {
+		async map() {
+			return {
+				dailyArtistId: this.$$model.dailyArtistId,
+				id: this.$$model.id,
+				result: this.$$model.result
+			}
+		};
+
+		static get items() {
+			return this.getPrefetchingProperties(ViewModel.maximumPrefetchingRecursionDepth, []);
+		}
+
+		static getPrefetchingProperties(level: number, parents: string[]) {
+			let repeats = false;
+
+			for (let size = 1; size <= parents.length / 2; size++) {
+				if (!repeats) {
+					for (let index = 0; index < parents.length; index++) {
+						if (parents[parents.length - 1 - index] == parents[parents.length - 1 - index - size]) {
+							repeats = true;
+						}
+					}
+				}
+			}
+
+			if (repeats) {
+				level--;
+			}
+
+			if (!level) {
+				return {};
+			}
+
+			return {
+				dailyArtistId: true,
+				id: true,
+				result: true
+			};
+		};
+
+		static toViewModel(data) {
+			const item = new ArchiveGuessViewModel(null);
+			"dailyArtistId" in data && (item.dailyArtistId = data.dailyArtistId === null ? null : `${data.dailyArtistId}`);
+			"id" in data && (item.id = data.id === null ? null : `${data.id}`);
+			"result" in data && (item.result = data.result === null ? null : `${data.result}`);
+
+			return item;
+		}
+
+		static async toModel(viewModel: ArchiveGuessViewModel) {
+			let model: Guess;
+
+			if (viewModel.id) {
+				model = await ViewModel.globalFetchingContext.findSet(Guess).find(viewModel.id)
+			} else {
+				model = new Guess();
+			}
+
+			"dailyArtistId" in viewModel && (model.dailyArtistId = viewModel.dailyArtistId === null ? null : `${viewModel.dailyArtistId}`);
 			"id" in viewModel && (model.id = viewModel.id === null ? null : `${viewModel.id}`);
 			"result" in viewModel && (model.result = viewModel.result === null ? null : `${viewModel.result}`);
 

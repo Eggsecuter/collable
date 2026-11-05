@@ -28,6 +28,34 @@ export class GuessViewModel {
 	}
 }
 
+export class ArchiveDayViewModel {
+	day: Date;
+	id: string;
+
+	private static $build(raw) {
+		const item = new ArchiveDayViewModel();
+		raw.day === undefined || (item.day = raw.day ? new Date(raw.day) : null)
+		raw.id === undefined || (item.id = raw.id === null ? null : `${raw.id}`)
+		
+		return item;
+	}
+}
+
+export class ArchiveGuessViewModel {
+	dailyArtistId: string;
+	id: string;
+	result: string;
+
+	private static $build(raw) {
+		const item = new ArchiveGuessViewModel();
+		raw.dailyArtistId === undefined || (item.dailyArtistId = raw.dailyArtistId === null ? null : `${raw.dailyArtistId}`)
+		raw.id === undefined || (item.id = raw.id === null ? null : `${raw.id}`)
+		raw.result === undefined || (item.result = raw.result === null ? null : `${raw.result}`)
+		
+		return item;
+	}
+}
+
 export class Service {
 	static baseUrl = "";
 
@@ -101,6 +129,48 @@ export class QuizService {
 				const d = r.data;
 
 				return d === null ? null : `${d}`;
+			} else if ("aborted" in r) {
+				throw new Error("request aborted by server");
+			} else if ("error" in r) {
+				throw new Error(r.error);
+			}
+		});
+	}
+
+	async getArchiveDays(): Promise<Array<ArchiveDayViewModel>> {
+		const $data = new FormData();
+		
+
+		return await fetch(Service.toURL("JmaWJuZjl4eXdvNmMyNHlkYXFqMXVpN2"), {
+			method: "post",
+			credentials: "include",
+			body: $data
+		}).then(res => res.json()).then(r => {
+			if ("data" in r) {
+				const d = r.data;
+
+				return d.map(d => d === null ? null : ArchiveDayViewModel["$build"](d));
+			} else if ("aborted" in r) {
+				throw new Error("request aborted by server");
+			} else if ("error" in r) {
+				throw new Error(r.error);
+			}
+		});
+	}
+
+	async getArchiveGuesses(): Promise<Array<ArchiveGuessViewModel>> {
+		const $data = new FormData();
+		
+
+		return await fetch(Service.toURL("gzNzhyaH14c2RibTowcmRxeHY5ZWIzNG"), {
+			method: "post",
+			credentials: "include",
+			body: $data
+		}).then(res => res.json()).then(r => {
+			if ("data" in r) {
+				const d = r.data;
+
+				return d.map(d => d === null ? null : ArchiveGuessViewModel["$build"](d));
 			} else if ("aborted" in r) {
 				throw new Error("request aborted by server");
 			} else if ("error" in r) {

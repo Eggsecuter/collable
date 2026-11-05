@@ -1,7 +1,7 @@
 import { Service } from "vlserver";
 import { ArtistViewModel } from "../artist/model";
 import { QuizManager } from "./manager";
-import { GuessViewModel } from "./model";
+import { ArchiveDayViewModel, ArchiveGuessViewModel, GuessViewModel } from "./model";
 
 export class QuizService extends Service {
 	constructor(
@@ -13,6 +13,14 @@ export class QuizService extends Service {
 	// the client keeps the day, so a quiz started before midnight is still checked against the same artist
 	getDay() {
 		return this.manager.getToday();
+	}
+
+	async getArchiveDays() {
+		return ArchiveDayViewModel.from(await this.manager.getArchiveDays());
+	}
+
+	async getArchiveGuesses() {
+		return ArchiveGuessViewModel.from(await this.manager.getArchiveGuesses());
 	}
 
 	async getCollaborators(day: string) {

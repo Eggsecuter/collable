@@ -1,8 +1,10 @@
-import { alignItems, background, child, color, display, fontSize, gap, height, insetInline, margin, marginTop, padding, position, rem, root, top } from "@acryps/style";
+import { alignItems, attribute, background, child, color, cursor, display, fontSize, gap, height, hover, insetInline, margin, marginLeft, marginTop, padding, position, rem, root, top } from "@acryps/style";
 import { iconFont, icons } from "./.built/icons";
 import { mediumFont } from "./assets/font/index.style";
+import { archiveStyle } from "./archive/index.style";
+import { helpStyle } from "./help/index.style";
 import { homeStyle } from "./home/index.style";
-import { colorBackground, colorBackgroundDimmed, colorPrimary, colorText, fontSizeNavigation } from "./index.style";
+import { colorBackground, colorBackgroundDimmed, colorPrimary, colorText, colorTextDimmed, fontSizeNavigation } from "./index.style";
 
 const headerInnerHeight = rem(3);
 const headerBlockPadding = rem(1);
@@ -46,7 +48,27 @@ export const applicationStyle = () => root() (
 					alignItems('center'),
 
 					color(colorPrimary),
-					fontSize(fontSizeNavigation)
+					fontSize(fontSizeNavigation),
+					cursor('pointer')
+				),
+
+				child('ui-navigation')(
+					display('flex'),
+					gap(rem(2)),
+					marginLeft('auto'),
+
+					child('ui-link')(
+						color(colorTextDimmed),
+						cursor('pointer'),
+
+						hover()(
+							color(colorText)
+						),
+
+						attribute('ui-active')(
+							color(colorPrimary)
+						)
+					)
 				)
 			),
 
@@ -55,7 +77,9 @@ export const applicationStyle = () => root() (
 				marginTop(headerTotalHeight),
 				padding(headerInlinePadding),
 
-				homeStyle()
+				homeStyle(),
+				archiveStyle(),
+				helpStyle()
 			)
 		)
 	)

@@ -1,0 +1,91 @@
+import { alignItems, attribute, background, border, borderLeft, child, color, cursor, display, flexDirection, flexGrow, fontSize, gap, height, hover, margin, maxWidth, padding, px, rem, textAlign, width } from "@acryps/style";
+import { box, colorBorder, colorError, colorPrimary, colorTextDimmed, colorWarning, fontSizeDetail, fontSizeSubtitle } from "../index.style";
+
+const contentWidth = px(640);
+
+export const archiveStyle = () => child('ui-archive')(
+	display('flex'),
+	flexDirection('column'),
+	gap(rem(1.5)),
+	maxWidth(contentWidth),
+	margin(0, 'auto'),
+
+	child('ui-prompt')(
+		display('block'),
+		textAlign('center'),
+
+		color(colorTextDimmed),
+		fontSize(fontSizeSubtitle)
+	),
+
+	child('ui-days')(
+		display('flex'),
+		flexDirection('column'),
+		gap(rem(0.5)),
+
+		child('ui-day')(
+			display('flex'),
+			alignItems('center'),
+			gap(rem(1)),
+			padding(rem(0.75), rem(1)),
+			box(),
+			borderLeft(px(4), 'solid', colorBorder),
+			cursor('pointer'),
+
+			hover()(
+				border(px(1), 'solid', colorPrimary),
+				borderLeft(px(4), 'solid', colorPrimary)
+			),
+
+			child('ui-date')(
+				display('block'),
+				flexGrow(1)
+			),
+
+			child('ui-results')(
+				display('flex'),
+				gap(rem(0.25)),
+
+				child('ui-result')(
+					display('block'),
+					width(rem(0.75)),
+					height(rem(0.75)),
+					background(colorError),
+
+					attribute('ui-collaborator')(
+						background(colorWarning)
+					),
+
+					attribute('ui-correct')(
+						background(colorPrimary)
+					)
+				)
+			),
+
+			child('ui-status')(
+				display('block'),
+				width(rem(8)),
+				textAlign('right'),
+
+				color(colorTextDimmed),
+				fontSize(fontSizeDetail)
+			),
+
+			attribute('ui-solved')(
+				borderLeft(px(4), 'solid', colorPrimary),
+
+				child('ui-status')(
+					color(colorPrimary)
+				)
+			),
+
+			attribute('ui-failed')(
+				borderLeft(px(4), 'solid', colorError),
+
+				child('ui-status')(
+					color(colorError)
+				)
+			)
+		)
+	)
+);

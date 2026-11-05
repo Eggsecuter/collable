@@ -1,4 +1,4 @@
-import { hex, px, rem, rgb } from "@acryps/style";
+import { background, border, borderRadius, hex, px, rem, rgb } from "@acryps/style";
 
 // responsiveness
 export const widthMobile = px(800);
@@ -30,3 +30,11 @@ export const fontSizeDetail = rem(0.8);
 export const fontSizeNavigation = rem(1.2);
 
 // reusable style components
+
+export const boxRadius = rem(0.75);
+
+export const box = () => [
+	background(colorBackground),
+	border(px(1), 'solid', colorBorder),
+	borderRadius(boxRadius)
+];

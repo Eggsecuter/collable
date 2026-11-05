@@ -4,6 +4,8 @@ import { PageComponent } from "./page";
 import { registerDirectives } from "@acryps/page-default-directives";
 import { applicationStyle } from "./page.style";
 import { HomePage } from "./home";
+import { ArchivePage } from "./archive";
+import { HelpPage } from "./help";
 
 // injected by esbuild
 declare const buildDate: string;
@@ -17,6 +19,9 @@ export class Application {
 
 		this.router = new PathRouter(PageComponent
 			.default(HomePage)
+			.route('/archive', ArchivePage)
+			.route('/how-to-play', HelpPage)
+			.route('/day/:day', HomePage)
 		);
 
 		registerDirectives(Component, this.router);

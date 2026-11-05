@@ -2,8 +2,9 @@ import { Component } from "@acryps/page";
 import { CollaborationGraph } from "../quiz/graph";
 import { playAnimation } from "../quiz/animation";
 import { ArtistService, ArtistViewModel, GuessViewModel, QuizService } from "../managed/services";
+import { formatDay } from "../quiz/day";
 
-const maximumGuesses = 6;
+export const maximumGuesses = 6;
 const searchDelay = 150;
 const minimumSearchLength = 2;
 const shakeDuration = 400;
@@ -18,11 +19,16 @@ type Guess = {
 	graphIndex?: number;
 };
 
+// plays today, or a previous day when opened from the archive
 export class HomePage extends Component {
+	declare parameters: { day?: string };
+
 	quizService = new QuizService();
 	artistService = new ArtistService();
 
 	day: string;
+	archived: boolean;
+
 	collaborators: ArtistViewModel[];
 	solution: ArtistViewModel;
 
@@ -52,7 +58,11 @@ export class HomePage extends Component {
 	}
 
 	async onload() {
-		this.day = await this.quizService.getDay();
+		const today = await this.quizService.getDay();
+
+		this.day = this.parameters?.day ?? today;
+		this.archived = this.day != today;
+
 		this.collaborators = await this.quizService.getCollaborators(this.day);
 
 		// the guesses are stored on the server, identified by the player cookie
@@ -91,6 +101,8 @@ export class HomePage extends Component {
 
 		return <ui-home>
 			<ui-prompt>
+				{this.archived ? <ui-date>{formatDay(this.day)}</ui-date> : null}
+
 				Who collaborated with all of these artists?
 			</ui-prompt>
 
@@ -174,7 +186,8 @@ export class HomePage extends Component {
 			</ui-share>
 
 			<ui-hint>
-				A new artist is waiting tomorrow
+				{this.archived ? 'Play another day from the ' : 'A new artist is waiting tomorrow, until then play previous days in the '}
+				<ui-link ui-href='/archive'>archive</ui-link>
 			</ui-hint>
 		</ui-result>;
 	}
@@ -296,7 +309,8 @@ export class HomePage extends Component {
 
 	async share() {
 		const squares = this.guesses.map(guess => guess.correct ? '🟩' : guess.collaborator ? '🟨' : '🟥').join('');
-		const text = `Collable ${this.day} ${this.solved ? this.guesses.length : 'X'}/${maximumGuesses}\n${squares}\n${location.origin}`;
+		const link = this.archived ? `${location.origin}/day/${this.day}` : location.origin;
+		const text = `Collable ${this.day} ${this.solved ? this.guesses.length : 'X'}/${maximumGuesses}\n${squares}\n${link}`;
 
 		if (navigator.share) {
 			try {

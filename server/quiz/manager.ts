@@ -114,6 +114,27 @@ export class QuizManager extends Manager {
 			.toArray();
 	}
 
+	// every day an artist was picked on, newest first
+	// days are only picked when someone plays, so days without players are missing
+	async getArchiveDays() {
+		const today = this.getToday();
+
+		return (await this.database.dailyArtist
+			.orderByDescending(dailyArtist => dailyArtist.day)
+			.toArray()
+		).filter(dailyArtist => dailyArtist.day.toISOString().split('T')[0] <= today);
+	}
+
+	// the players guesses of all days, the archive shows the result of each day
+	async getArchiveGuesses() {
+		const playerId = this.player.id;
+
+		return this.database.guess
+			.where(guess => guess.playerId.valueOf() == playerId)
+			.orderByAscending(guess => guess.guessed)
+			.toArray();
+	}
+
 	// stores the guess of the player, checked against the days artist
 	async guess(day: string, artistId: string) {
 		const dailyArtist = await this.getDailyArtist(day);

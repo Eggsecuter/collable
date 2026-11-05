@@ -1,10 +1,9 @@
 import { alignItems, attribute, background, border, borderRadius, boxShadow, child, color, cursor, display, flexDirection, flexGrow, fontSize, gap, gridTemplateColumns, height, hover, insetInline, left, margin, maxWidth, minHeight, outline, overflow, padding, percentage, placeholder, position, px, rem, repeat, stroke, strokeWidth, textAlign, textOverflow, top, whiteSpace, width, zIndex, vh, bottom, fr, Keyframes, translateX, transform, opacity, hex, fontFamily, milliseconds, empty, focus, borderLeft, min, minMax, scale, flexWrap, justifyContent, textTransform, borderBottom } from "@acryps/style";
 import { highlightDuration } from "../quiz/graph";
-import { colorBackground, colorBackgroundDimmed, colorBorder, colorWarning, colorBoxShadow, colorError, colorHighlight, colorPrimary, colorText, colorTextDimmed, fontSizeDetail, fontSizeSubtitle, fontSizeTitle } from "../index.style";
+import { box, boxRadius, colorBackground, colorBackgroundDimmed, colorBorder, colorWarning, colorBoxShadow, colorError, colorHighlight, colorPrimary, colorText, colorTextDimmed, fontSizeDetail, fontSizeSubtitle, fontSizeTitle } from "../index.style";
 
 const contentWidth = px(640);
 const fieldHeight = rem(3);
-const fieldRadius = rem(0.75);
 
 const shake = new Keyframes('shake')
 	.addKeyframe(percentage(25), transform(translateX(rem(-0.4))))
@@ -36,12 +35,6 @@ const flashLine = new Keyframes('flash-line')
 	.addKeyframe([percentage(0), percentage(35), percentage(70)], stroke(colorError))
 	.addKeyframe([percentage(17), percentage(52)], stroke(colorBorder));
 
-const box = () => [
-	background(colorBackground),
-	border(px(1), 'solid', colorBorder),
-	borderRadius(fieldRadius)
-];
-
 export const homeStyle = () => child('ui-home')(
 	shake,
 	flash,
@@ -60,7 +53,12 @@ export const homeStyle = () => child('ui-home')(
 		textAlign('center'),
 
 		color(colorTextDimmed),
-		fontSize(fontSizeSubtitle)
+		fontSize(fontSizeSubtitle),
+
+		child('ui-date')(
+			display('block'),
+			color(colorText)
+		)
 	),
 
 	child('ui-graph')(
@@ -233,7 +231,7 @@ export const homeStyle = () => child('ui-home')(
 				display('flex'),
 				alignItems('center'),
 				padding(0, rem(1.5)),
-				borderRadius(fieldRadius),
+				borderRadius(boxRadius),
 
 				background(colorPrimary),
 				color(colorBackground),
@@ -300,7 +298,7 @@ export const homeStyle = () => child('ui-home')(
 		child('ui-share')(
 			display('block'),
 			padding(rem(0.75), rem(1.5)),
-			borderRadius(fieldRadius),
+			borderRadius(boxRadius),
 
 			background(colorPrimary),
 			color(colorBackground),
@@ -313,8 +311,14 @@ export const homeStyle = () => child('ui-home')(
 
 		child('ui-hint')(
 			display('block'),
+			textAlign('center'),
 			color(colorTextDimmed),
-			fontSize(fontSizeDetail)
+			fontSize(fontSizeDetail),
+
+			child('ui-link')(
+				color(colorPrimary),
+				cursor('pointer')
+			)
 		)
 	),
 

@@ -49,6 +49,7 @@ export class Artist extends Entity<ArtistQueryProxy> {
 export class CollaborationQueryProxy extends QueryProxy {
 	get fromArtist(): Partial<ArtistQueryProxy> { throw new Error("Invalid use of QueryModels. QueryModels cannot be used during runtime"); }
 	get toArtist(): Partial<ArtistQueryProxy> { throw new Error("Invalid use of QueryModels. QueryModels cannot be used during runtime"); }
+	get count(): Partial<QueryNumber> { throw new Error("Invalid use of QueryModels. QueryModels cannot be used during runtime"); }
 	get fromArtistId(): Partial<QueryUUID> { throw new Error("Invalid use of QueryModels. QueryModels cannot be used during runtime"); }
 	get spotifyFromId(): Partial<QueryString> { throw new Error("Invalid use of QueryModels. QueryModels cannot be used during runtime"); }
 	get spotifyToId(): Partial<QueryString> { throw new Error("Invalid use of QueryModels. QueryModels cannot be used during runtime"); }
@@ -58,6 +59,7 @@ export class CollaborationQueryProxy extends QueryProxy {
 export class Collaboration extends Entity<CollaborationQueryProxy> {
 	get fromArtist(): Partial<ForeignReference<Artist>> { return this.$fromArtist; }
 	get toArtist(): Partial<ForeignReference<Artist>> { return this.$toArtist; }
+	count: number;
 	fromArtistId: string;
 	declare id: string;
 	spotifyFromId: string;
@@ -67,6 +69,7 @@ export class Collaboration extends Entity<CollaborationQueryProxy> {
 	$$meta = {
 		source: "collaboration",
 		columns: {
+			count: { type: "int4", name: "count" },
 			fromArtistId: { type: "uuid", name: "from_artist_id" },
 			id: { type: "uuid", name: "id" },
 			spotifyFromId: { type: "text", name: "spotify_from_id" },

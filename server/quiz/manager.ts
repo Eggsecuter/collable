@@ -10,6 +10,9 @@ const candidatePoolSize = 100;
 
 const maximumCollaborators = 10;
 
+// share of the song count in the collaborator order, the rest is popularity
+const countWeight = 0.5;
+
 // share of the name revealed per number of wrong guesses
 // null shows nothing, 0 shows the outline of the name without any letters
 const revealedShares = [null, 0, 0.2, 0.4, 0.6, 0.8];
@@ -68,21 +71,33 @@ export class QuizManager extends Manager {
 		}
 	}
 
-	// the most followed collaborators of the days artist
+	// the collaborators of the days artist with the most songs together
 	async getCollaborators(day: string) {
 		const artist = await this.getArtist(day);
 
 		const collaborators = await this.findCollaborators([artist.id]);
-		const ids = [...collaborators.get(artist.id) ?? []];
+		const counts = collaborators.get(artist.id) ?? new Map<string, number>();
 
-		// postgres sorts missing follower counts first, the few artists without them are obscure anyways
+		// the few artists without follower counts are obscure anyways
+		const candidates = await this.database.artist
+			.where(collaborator => (collaborator.id as QueryUUID).includedIn([...counts.keys()]) && collaborator.followers.valueOf() != null)
+			.toArray();
+
+		// counts range from 1 to thousands, the logarithm keeps a few close collaborators from outweighing popularity
+		// both parts are relative to the best collaborator, so each weighs the same for every artist
+		const maximumCount = Math.max(1, ...candidates.map(candidate => counts.get(candidate.id)));
+		const maximumPopularity = Math.max(1, ...candidates.map(candidate => candidate.popularity ?? 0));
+
+		const score = (collaborator: Artist) =>
+			countWeight * Math.log(1 + counts.get(collaborator.id)) / Math.log(1 + maximumCount)
+			+ (1 - countWeight) * (collaborator.popularity ?? 0) / maximumPopularity;
+
 		// the id makes the order unique, so every player sees the same graph
-		return this.database.artist
-			.where(collaborator => (collaborator.id as QueryUUID).includedIn(ids) && collaborator.followers.valueOf() != null)
-			.orderByDescending(collaborator => collaborator.followers)
-			.orderByDescending(collaborator => collaborator.popularity)
-			.orderByAscending(collaborator => collaborator.id)
-			.limit(maximumCollaborators);
+		return candidates
+			.map(collaborator => ({ collaborator, score: score(collaborator) }))
+			.sort((a, b) => b.score - a.score || (a.collaborator.id < b.collaborator.id ? -1 : 1))
+			.slice(0, maximumCollaborators)
+			.map(scored => scored.collaborator);
 	}
 
 	// 'correct' for the days artist, 'collaborator' for anyone who collaborated with them, 'wrong' otherwise
@@ -169,26 +184,28 @@ export class QuizManager extends Manager {
 	}
 
 	// collaborations are stored in one direction only, check both and count every collaborator once
+	// maps each artist to their collaborators and the number of songs they made together
 	private async findCollaborators(artistIds: string[]) {
 		const collaborations = await this.database.collaboration
 			.where(collaboration => collaboration.fromArtistId.includedIn(artistIds) || collaboration.toArtistId.includedIn(artistIds))
 			.toArray();
 
-		const collaborators = new Map<string, Set<string>>();
+		const collaborators = new Map<string, Map<string, number>>();
 
-		const add = (artistId: string, collaboratorId: string) => {
+		const add = (artistId: string, collaboratorId: string, count: number) => {
 			if (!collaborators.has(artistId)) {
-				collaborators.set(artistId, new Set());
+				collaborators.set(artistId, new Map());
 			}
 
-			collaborators.get(artistId).add(collaboratorId);
+			const counts = collaborators.get(artistId);
+			counts.set(collaboratorId, (counts.get(collaboratorId) ?? 0) + count);
 		};
 
 		for (let collaboration of collaborations) {
 			// skip collaborators which are not in the artist table
 			if (collaboration.fromArtistId && collaboration.toArtistId && collaboration.fromArtistId != collaboration.toArtistId) {
-				add(collaboration.fromArtistId, collaboration.toArtistId);
-				add(collaboration.toArtistId, collaboration.fromArtistId);
+				add(collaboration.fromArtistId, collaboration.toArtistId, collaboration.count);
+				add(collaboration.toArtistId, collaboration.fromArtistId, collaboration.count);
 			}
 		}
 

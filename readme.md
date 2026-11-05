@@ -9,6 +9,13 @@ The data is imported from a [kaggle dataset](https://www.kaggle.com/datasets/jfr
 
 It covers spotify artists from all over the world until 10. Oct 2022.
 
+### Collaboration counts
+The kaggle dataset only knows that two artists collaborated, not how often.
+The number of songs is counted from a [MusicBrainz](https://musicbrainz.org/doc/MusicBrainz_Database/Download) dump (CC0), matched by the spotify links of the artists.
+
+Every kaggle collaboration is kept, with the musicbrainz song count or 1 if musicbrainz does not know it.
+Collaborations only found in musicbrainz are added if both artists are in the kaggle dataset, as the metrics (followers, popularity) come from there.
+
 ## Choosing daily artist
 - Exclude all artists
 	- with no chart hits or under 1'000'000 followers

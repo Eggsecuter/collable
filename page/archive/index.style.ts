@@ -1,7 +1,10 @@
-import { alignItems, borderRadius, justifyContent, attribute, background, border, borderLeft, child, color, cursor, display, flexDirection, flexGrow, fontSize, gap, height, hover, margin, maxWidth, padding, px, rem, textAlign, width } from "@acryps/style";
+import { alignItems, borderRadius, justifyContent, attribute, background, border, borderLeft, child, color, cursor, display, flexBasis, flexDirection, flexGrow, flexWrap, fontSize, gap, height, hover, margin, maxWidth, media, padding, percentage, px, rem, rowGap, textAlign, width } from "@acryps/style";
 import { box, colorBackground, colorBorder, colorError, colorPrimary, colorTextDimmed, colorWarning, fontSizeDetail, fontSizeSubtitle } from "../index.style";
 
 const contentWidth = px(640);
+
+// below this width the date gets its own row, so the results are not squeezed
+const stackedWidth = px(480);
 
 export const archiveStyle = () => child('ui-archive')(
 	display('flex'),
@@ -25,12 +28,17 @@ export const archiveStyle = () => child('ui-archive')(
 
 		child('ui-day')(
 			display('flex'),
+			flexWrap('wrap'),
 			alignItems('center'),
 			gap(rem(1)),
 			padding(rem(0.75), rem(1)),
 			box(),
 			borderLeft(px(4), 'solid', colorBorder),
 			cursor('pointer'),
+
+			media(maxWidth(stackedWidth))(
+				rowGap(rem(0.5)).important()
+			),
 
 			hover()(
 				border(px(1), 'solid', colorPrimary),
@@ -39,12 +47,20 @@ export const archiveStyle = () => child('ui-archive')(
 
 			child('ui-date')(
 				display('block'),
-				flexGrow(1)
+				flexGrow(1),
+
+				media(maxWidth(stackedWidth))(
+					flexBasis(percentage(100))
+				)
 			),
 
 			child('ui-results')(
 				display('flex'),
 				gap(rem(0.25)),
+
+				media(maxWidth(stackedWidth))(
+					flexGrow(1)
+				),
 
 				child('ui-result')(
 					display('flex'),

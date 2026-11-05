@@ -1,14 +1,19 @@
 import { Component } from "@acryps/page";
-import { archiveIcon, brandIcon, helpIcon, todayIcon } from "./.built/icons";
+import { archiveIcon, brandIcon, closeIcon, helpIcon, menuIcon, todayIcon } from "./.built/icons";
 
 export class PageComponent extends Component {
+	header: HTMLElement;
+	menuButton: HTMLElement;
+
 	render(child) {
 		this.router.onroutechanged = () => {
+			this.toggleMenu(false);
+
 			window.scrollTo(0, 0);
 		}
 
 		return <ui-page>
-			<ui-header>
+			{this.header = <ui-header>
 				<ui-brand ui-href='/'>
 					{brandIcon()}
 					<ui-name>Collable</ui-name>
@@ -30,11 +35,21 @@ export class PageComponent extends Component {
 						How to play
 					</ui-link>
 				</ui-navigation>
-			</ui-header>
+
+				{this.menuButton = <ui-menu ui-click={() => this.toggleMenu(!this.header.hasAttribute('ui-open'))}>
+					{menuIcon()}
+				</ui-menu>}
+			</ui-header>}
 
 			<ui-main>
 				{child}
 			</ui-main>
 		</ui-page>;
+	}
+
+	// the navigation is collapsed into a menu on mobile, toggled without re-rendering the page
+	toggleMenu(open: boolean) {
+		this.header.toggleAttribute('ui-open', open);
+		this.menuButton.replaceChildren(open ? closeIcon() : menuIcon());
 	}
 }

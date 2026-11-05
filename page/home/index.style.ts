@@ -1,6 +1,6 @@
-import { alignItems, attribute, background, border, borderRadius, boxShadow, child, color, cursor, display, flexDirection, flexGrow, fontSize, gap, gridTemplateColumns, height, hover, insetInline, left, margin, maxWidth, minHeight, outline, overflow, padding, percentage, placeholder, position, px, rem, repeat, stroke, strokeWidth, textAlign, textOverflow, top, whiteSpace, width, zIndex, vh, bottom, fr, Keyframes, translateX, transform, opacity, hex, fontFamily, milliseconds, empty, focus, borderLeft, min, minMax, scale, flexWrap, justifyContent, textTransform, borderBottom, focusWithin, minWidth, marginRight, flexShrink } from "@acryps/style";
+import { alignItems, attribute, background, border, borderRadius, boxShadow, child, color, cursor, display, flexDirection, flexGrow, fontSize, gap, gridTemplateColumns, height, hover, insetInline, left, margin, maxWidth, minHeight, outline, overflow, padding, percentage, placeholder, position, px, rem, repeat, stroke, strokeWidth, textAlign, textOverflow, top, whiteSpace, width, zIndex, vh, bottom, fr, Keyframes, translateX, transform, opacity, hex, fontFamily, milliseconds, empty, focus, borderLeft, min, minMax, scale, flexWrap, justifyContent, textTransform, borderBottom, focusWithin, minWidth, marginRight, flexShrink, media } from "@acryps/style";
 import { highlightDuration } from "../quiz/graph";
-import { box, boxRadius, colorBackground, colorBackgroundDimmed, colorBorder, colorWarning, colorBoxShadow, colorError, colorHighlight, colorPrimary, colorText, colorTextDimmed, fontSizeDetail, fontSizeSubtitle, fontSizeTitle } from "../index.style";
+import { box, boxRadius, colorBackground, colorBackgroundDimmed, colorBorder, colorWarning, colorBoxShadow, colorError, colorHighlight, colorPrimary, colorText, colorTextDimmed, fontSizeDetail, fontSizeSubtitle, fontSizeTitle, widthMobile } from "../index.style";
 
 const contentWidth = px(640);
 const fieldHeight = rem(3);
@@ -236,6 +236,8 @@ export const homeStyle = () => child('ui-home')(
 			child('ui-input')(
 				display('flex'),
 				flexGrow(1),
+				// allows the input to shrink below its placeholder width
+				minWidth(0),
 				gap(rem(0.75)),
 				alignItems('center'),
 				padding(0, rem(1)),
@@ -275,6 +277,7 @@ export const homeStyle = () => child('ui-home')(
 
 			child('ui-submit')(
 				display('flex'),
+				flexShrink(0),
 				gap(rem(0.5)),
 				alignItems('center'),
 				padding(0, rem(1.5)),
@@ -283,6 +286,10 @@ export const homeStyle = () => child('ui-home')(
 				background(colorPrimary),
 				color(colorBackground),
 				cursor('pointer'),
+
+				media(maxWidth(widthMobile))(
+					padding(0, rem(1)).important()
+				),
 
 				hover()(
 					background(colorHighlight)

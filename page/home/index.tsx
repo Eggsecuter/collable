@@ -1,7 +1,7 @@
 import { Component } from "@acryps/page";
 import { CollaborationGraph } from "../quiz/graph";
 import { playAnimation } from "../quiz/animation";
-import { ArtistService, ArtistViewModel, QuizService } from "../managed/services";
+import { ArtistService, ArtistViewModel, GuessViewModel, QuizService } from "../managed/services";
 
 const maximumGuesses = 6;
 const searchDelay = 150;
@@ -43,10 +43,6 @@ export class HomePage extends Component {
 
 	submitting = false;
 
-	get storageKey() {
-		return `collable-${this.day}`;
-	}
-
 	get solved() {
 		return this.guesses.some(guess => guess.correct);
 	}
@@ -55,19 +51,12 @@ export class HomePage extends Component {
 		return this.solved || this.guesses.length >= maximumGuesses;
 	}
 
-	get wrongGuesses() {
-		return this.guesses.filter(guess => !guess.correct).length;
-	}
-
 	async onload() {
 		this.day = await this.quizService.getDay();
 		this.collaborators = await this.quizService.getCollaborators(this.day);
 
-		try {
-			this.guesses = JSON.parse(localStorage.getItem(this.storageKey)) ?? [];
-		} catch {
-			this.guesses = [];
-		}
+		// the guesses are stored on the server, identified by the player cookie
+		this.guesses = (await this.quizService.getGuesses(this.day)).map(guess => this.toGuess(guess));
 
 		// the graph is kept across updates, so new collaborators can be animated in
 		this.graph = new CollaborationGraph(this.collaborators.map(collaborator => collaborator.name));
@@ -89,7 +78,7 @@ export class HomePage extends Component {
 			this.solution = await this.quizService.getSolution(this.day);
 			this.hint = [...this.solution.name];
 		} else {
-			this.hint = await this.quizService.getHint(this.day, this.wrongGuesses);
+			this.hint = await this.quizService.getHint(this.day);
 		}
 	}
 
@@ -278,34 +267,31 @@ export class HomePage extends Component {
 		let guess: Guess;
 
 		try {
-			const result = await this.quizService.guess(this.day, artist.id);
-
-			guess = {
-				id: artist.id,
-				name: artist.name,
-				correct: result == 'correct',
-				collaborator: result == 'collaborator'
-			};
+			guess = this.toGuess(await this.quizService.guess(this.day, artist.id));
 		} finally {
 			this.submitting = false;
 		}
 
-		// half correct guesses join the graph between two random neighbours
+		// half correct guesses join the graph at the position chosen by the server
 		if (guess.collaborator) {
-			guess.graphIndex = 1 + Math.floor(Math.random() * this.graph.collaborators.length);
-
 			this.graph.addCollaborator(guess.name, guess.graphIndex, true, true);
 		}
 
 		this.guesses.push(guess);
 
-		try {
-			localStorage.setItem(this.storageKey, JSON.stringify(this.guesses));
-		} catch {}
-
 		await this.loadHint();
 
 		this.update();
+	}
+
+	toGuess(guess: GuessViewModel): Guess {
+		return {
+			id: guess.artist.id,
+			name: guess.artist.name,
+			correct: guess.result == 'correct',
+			collaborator: guess.result == 'collaborator',
+			graphIndex: guess.graphIndex
+		};
 	}
 
 	async share() {

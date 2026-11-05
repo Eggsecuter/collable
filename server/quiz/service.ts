@@ -1,6 +1,7 @@
 import { Service } from "vlserver";
 import { ArtistViewModel } from "../artist/model";
 import { QuizManager } from "./manager";
+import { GuessViewModel } from "./model";
 
 export class QuizService extends Service {
 	constructor(
@@ -18,16 +19,20 @@ export class QuizService extends Service {
 		return ArtistViewModel.from(await this.manager.getCollaborators(day));
 	}
 
-	// returns 'correct', 'collaborator' or 'wrong'
-	async guess(day: string, artistId: string): Promise<string> {
-		return await this.manager.guess(day, artistId);
+	// the guesses of the player identified by their cookie
+	async getGuesses(day: string) {
+		return GuessViewModel.from(await this.manager.getGuesses(day));
 	}
 
-	async getHint(day: string, wrongGuesses: number): Promise<string[]> {
-		return await this.manager.getHint(day, wrongGuesses);
+	async guess(day: string, artistId: string) {
+		return new GuessViewModel(await this.manager.guess(day, artistId));
+	}
+
+	async getHint(day: string): Promise<string[]> {
+		return await this.manager.getHint(day);
 	}
 
 	async getSolution(day: string) {
-		return new ArtistViewModel(await this.manager.getArtist(day));
+		return new ArtistViewModel(await this.manager.getSolution(day));
 	}
 }

@@ -11,6 +11,23 @@ export class ArtistViewModel {
 	}
 }
 
+export class GuessViewModel {
+	artist: ArtistViewModel;
+	graphIndex: number;
+	id: string;
+	result: string;
+
+	private static $build(raw) {
+		const item = new GuessViewModel();
+		raw.artist === undefined || (item.artist = raw.artist ? ArtistViewModel["$build"](raw.artist) : null)
+		raw.graphIndex === undefined || (item.graphIndex = raw.graphIndex === null ? null : +raw.graphIndex)
+		raw.id === undefined || (item.id = raw.id === null ? null : `${raw.id}`)
+		raw.result === undefined || (item.result = raw.result === null ? null : `${raw.result}`)
+		
+		return item;
+	}
+}
+
 export class Service {
 	static baseUrl = "";
 
@@ -113,12 +130,11 @@ export class QuizService {
 		});
 	}
 
-	async guess(day: string, artistId: string): Promise<string> {
+	async getGuesses(day: string): Promise<Array<GuessViewModel>> {
 		const $data = new FormData();
-		$data.append("cyMTBmejkyZnNnM2Fva31pcmRuNGY4cW", Service.stringify(day))
-		$data.append("xpMmVtc2JjemR5ZHN4eGVqYT9nOWt5Zm", Service.stringify(artistId))
+		$data.append("ZsMHI3bz1sb2J0MXFxaGZ1YWcybzxwdm", Service.stringify(day))
 
-		return await fetch(Service.toURL("NhcnlueWY2MGJzYWhuODVtYj5idDJyeG"), {
+		return await fetch(Service.toURL("kyemZwYjRmdjFqNGI2bHNkc2I5cnVkZ2"), {
 			method: "post",
 			credentials: "include",
 			body: $data
@@ -126,7 +142,7 @@ export class QuizService {
 			if ("data" in r) {
 				const d = r.data;
 
-				return d === null ? null : `${d}`;
+				return d.map(d => d === null ? null : GuessViewModel["$build"](d));
 			} else if ("aborted" in r) {
 				throw new Error("request aborted by server");
 			} else if ("error" in r) {
@@ -135,12 +151,33 @@ export class QuizService {
 		});
 	}
 
-	async getHint(day: string, wrongGuesses: number): Promise<Array<string>> {
+	async guess(day: string, artistId: string): Promise<GuessViewModel> {
 		const $data = new FormData();
-		$data.append("pud2ZnNzNhdmI2eGEzMG0wNzJxb3RuNH", Service.stringify(day))
-		$data.append("J3YnV5OWsyenluYmpueHdhZWd6dXVzb3", Service.stringify(wrongGuesses))
+		$data.append("N0NzUyODU0OXFkb3U3amRud2R6NmFteH", Service.stringify(day))
+		$data.append("FidnpkbWVkeTJzbjc0ZzV0NngyODh1MG", Service.stringify(artistId))
 
-		return await fetch(Service.toURL("03d3F3cWNuZWU0eTQyY3NwZzVibHlrdn"), {
+		return await fetch(Service.toURL("FicmdnZ3B5b3J6eDZubnxyaWN3enRiOX"), {
+			method: "post",
+			credentials: "include",
+			body: $data
+		}).then(res => res.json()).then(r => {
+			if ("data" in r) {
+				const d = r.data;
+
+				return d === null ? null : GuessViewModel["$build"](d);
+			} else if ("aborted" in r) {
+				throw new Error("request aborted by server");
+			} else if ("error" in r) {
+				throw new Error(r.error);
+			}
+		});
+	}
+
+	async getHint(day: string): Promise<Array<string>> {
+		const $data = new FormData();
+		$data.append("dpbmF3OHF0MjZtenZ2Z2drc2N5ZHhyYn", Service.stringify(day))
+
+		return await fetch(Service.toURL("NvdTlsOGVwMm02dGdoMzUxc20xdnhwOX"), {
 			method: "post",
 			credentials: "include",
 			body: $data

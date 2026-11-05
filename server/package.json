@@ -12,12 +12,14 @@
 		"pgpassword": "Database Password"
 	},
 	"dependencies": {
+		"cookie-parser": "^1.4.7",
 		"express": "^5.1.0",
 		"vlquery": "^8.2.1",
 		"vlserver": "^5.3.0"
 	},
 	"devDependencies": {
 		"@acryps/environment": "^2.8.0",
+		"@types/cookie-parser": "^1.4.10",
 		"@types/node": "^18.11.15",
 		"esbuild": "^0.20.1",
 		"typescript": "^5.2.2"

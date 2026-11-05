@@ -1,6 +1,7 @@
 import { QueryUUID } from "vlquery";
 import { Manager } from "vlserver";
-import { Artist, DailyArtist, DbContext } from "../managed/database";
+import { Artist, DailyArtist, DbContext, Guess } from "../managed/database";
+import { PlayerContext } from "../player/context";
 import { createSeed, seededShuffle } from "../random";
 
 // daily artist selection rules, see readme
@@ -9,6 +10,7 @@ const minimumCollaborators = 5;
 const candidatePoolSize = 100;
 
 const maximumCollaborators = 10;
+const maximumGuesses = 6;
 
 // share of the song count in the collaborator order, the rest is popularity
 const countWeight = 0.5;
@@ -21,7 +23,8 @@ export type GuessResult = 'correct' | 'collaborator' | 'wrong';
 
 export class QuizManager extends Manager {
 	constructor(
-		private database: DbContext
+		private database: DbContext,
+		private player: PlayerContext
 	) {
 		super();
 	}
@@ -100,34 +103,68 @@ export class QuizManager extends Manager {
 			.map(scored => scored.collaborator);
 	}
 
-	// 'correct' for the days artist, 'collaborator' for anyone who collaborated with them, 'wrong' otherwise
-	async guess(day: string, artistId: string): Promise<GuessResult> {
-		const artist = await this.getArtist(day);
-		const guess = await this.database.artist.find(artistId);
+	// the players guesses of the day in the order they were made
+	async getGuesses(day: string) {
+		const dailyArtistId = (await this.getDailyArtist(day)).id;
+		const playerId = this.player.id;
 
-		// some artists exist multiple times with the same name
-		if (guess.id == artist.id || guess.name.toLowerCase() == artist.name.toLowerCase()) {
-			return 'correct';
+		return this.database.guess
+			.where(guess => guess.playerId.valueOf() == playerId && guess.dailyArtistId.valueOf() == dailyArtistId)
+			.orderByAscending(guess => guess.guessed)
+			.toArray();
+	}
+
+	// stores the guess of the player, checked against the days artist
+	async guess(day: string, artistId: string) {
+		const dailyArtist = await this.getDailyArtist(day);
+		const artist = await dailyArtist.artist.fetch();
+		const guessed = await this.database.artist.find(artistId);
+
+		const previousGuesses = await this.getGuesses(day);
+
+		if (this.isFinished(previousGuesses)) {
+			throw new Error(`The quiz of '${day}' is finished already`);
 		}
 
-		const collaborators = await this.findCollaborators([artist.id]);
-
-		if (collaborators.get(artist.id)?.has(guess.id)) {
-			return 'collaborator';
+		if (previousGuesses.some(previous => previous.artistId == guessed.id)) {
+			throw new Error(`'${guessed.name}' was guessed already`);
 		}
 
-		return 'wrong';
+		const guess = new Guess();
+		guess.playerId = this.player.id;
+		guess.guessed = new Date();
+		guess.dailyArtistId = dailyArtist.id;
+		guess.artistId = guessed.id;
+		guess.result = await this.check(artist, guessed);
+
+		// collaborators join the graph between two random neighbours, stored so the graph looks the same on the next visit
+		if (guess.result == 'collaborator') {
+			const shownCollaborators = (await this.getCollaborators(day)).length + previousGuesses.filter(previous => previous.result == 'collaborator').length;
+
+			guess.graphIndex = 1 + Math.floor(Math.random() * shownCollaborators);
+		}
+
+		return await guess.create();
+	}
+
+	// the full name is only sent once the player is done, until then only the hint is available
+	async getSolution(day: string) {
+		if (!this.isFinished(await this.getGuesses(day))) {
+			throw new Error(`The quiz of '${day}' is not finished yet`);
+		}
+
+		return await this.getArtist(day);
 	}
 
 	// the days artist name with unrevealed letters as null, empty while there is no hint yet
 	// masked on the server, so the full name is never sent while the quiz is running
-	async getHint(day: string, wrongGuesses: number) {
+	async getHint(day: string) {
 		const dailyArtist = await this.getDailyArtist(day);
 		const artist = await dailyArtist.artist.fetch();
 
-		// the client sends the guess count, cap it so the hint never gives away more than the last share
-		const guesses = Math.max(0, Math.min(revealedShares.length - 1, Math.floor(+wrongGuesses) || 0));
-		const share = revealedShares[guesses];
+		// the last share stays after more wrong guesses, so the hint never gives away the whole name
+		const wrongGuesses = (await this.getGuesses(day)).filter(guess => guess.result != 'correct').length;
+		const share = revealedShares[Math.min(revealedShares.length - 1, wrongGuesses)];
 
 		if (share === null) {
 			return [];
@@ -147,6 +184,26 @@ export class QuizManager extends Manager {
 		const revealed = new Set(seededShuffle(letterIndices, dailyArtist.hintSeed).slice(0, revealedCount));
 
 		return characters.map((character, index) => letterIndices.includes(index) && !revealed.has(index) ? null : character);
+	}
+
+	// 'correct' for the days artist, 'collaborator' for anyone who collaborated with them, 'wrong' otherwise
+	private async check(artist: Artist, guessed: Artist): Promise<GuessResult> {
+		// some artists exist multiple times with the same name
+		if (guessed.id == artist.id || guessed.name.toLowerCase() == artist.name.toLowerCase()) {
+			return 'correct';
+		}
+
+		const collaborators = await this.findCollaborators([artist.id]);
+
+		if (collaborators.get(artist.id)?.has(guessed.id)) {
+			return 'collaborator';
+		}
+
+		return 'wrong';
+	}
+
+	private isFinished(guesses: Guess[]) {
+		return guesses.some(guess => guess.result == 'correct') || guesses.length >= maximumGuesses;
 	}
 
 	private findDailyArtist(day: string) {

@@ -1,5 +1,7 @@
 import { Component } from "@acryps/page";
 import { maximumGuesses } from "../home";
+import { resultIcon } from "../quiz/result";
+import { artistIcon, hintIcon } from "../.built/icons";
 
 export class HelpPage extends Component {
 	render() {
@@ -9,7 +11,10 @@ export class HelpPage extends Component {
 			</ui-prompt>
 
 			<ui-section>
-				<ui-title>Find the artist</ui-title>
+				<ui-title>
+					{artistIcon()}
+					Find the artist
+				</ui-title>
 
 				<ui-text>
 					Every day there is a new mystery artist in the middle of the graph.
@@ -28,24 +33,36 @@ export class HelpPage extends Component {
 
 				<ui-results>
 					<ui-result ui-correct>
-						<ui-name>Correct</ui-name>
+						<ui-name>
+							{resultIcon('correct')}
+							Correct
+						</ui-name>
 						<ui-text>The mystery artist, you solved it.</ui-text>
 					</ui-result>
 
 					<ui-result ui-collaborator>
-						<ui-name>Collaborator</ui-name>
+						<ui-name>
+							{resultIcon('collaborator')}
+							Collaborator
+						</ui-name>
 						<ui-text>Not the artist, but they worked together. The guess joins the graph.</ui-text>
 					</ui-result>
 
 					<ui-result>
-						<ui-name>Wrong</ui-name>
+						<ui-name>
+							{resultIcon('wrong')}
+							Wrong
+						</ui-name>
 						<ui-text>No collaboration with the mystery artist.</ui-text>
 					</ui-result>
 				</ui-results>
 			</ui-section>
 
 			<ui-section>
-				<ui-title>Hints</ui-title>
+				<ui-title>
+					{hintIcon()}
+					Hints
+				</ui-title>
 
 				<ui-text>
 					After your first miss the outline of the name appears.

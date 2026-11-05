@@ -2,6 +2,7 @@ import { Component } from "@acryps/page";
 import { ArchiveDayViewModel, ArchiveGuessViewModel, QuizService } from "../managed/services";
 import { formatDay, toDay } from "../quiz/day";
 import { maximumGuesses } from "../home";
+import { resultIcon } from "../quiz/result";
 
 export class ArchivePage extends Component {
 	quizService = new QuizService();
@@ -54,7 +55,9 @@ export class ArchivePage extends Component {
 			</ui-date>
 
 			<ui-results>
-				{guesses.map(guess => <ui-result ui-correct={guess.result == 'correct'} ui-collaborator={guess.result == 'collaborator'}></ui-result>)}
+				{guesses.map(guess => <ui-result ui-correct={guess.result == 'correct'} ui-collaborator={guess.result == 'collaborator'}>
+					{resultIcon(guess.result as 'correct' | 'collaborator' | 'wrong')}
+				</ui-result>)}
 			</ui-results>
 
 			<ui-status>

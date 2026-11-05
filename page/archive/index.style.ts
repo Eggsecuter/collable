@@ -1,5 +1,5 @@
-import { alignItems, attribute, background, border, borderLeft, child, color, cursor, display, flexDirection, flexGrow, fontSize, gap, height, hover, margin, maxWidth, padding, px, rem, textAlign, width } from "@acryps/style";
-import { box, colorBorder, colorError, colorPrimary, colorTextDimmed, colorWarning, fontSizeDetail, fontSizeSubtitle } from "../index.style";
+import { alignItems, borderRadius, justifyContent, attribute, background, border, borderLeft, child, color, cursor, display, flexDirection, flexGrow, fontSize, gap, height, hover, margin, maxWidth, padding, px, rem, textAlign, width } from "@acryps/style";
+import { box, colorBackground, colorBorder, colorError, colorPrimary, colorTextDimmed, colorWarning, fontSizeDetail, fontSizeSubtitle } from "../index.style";
 
 const contentWidth = px(640);
 
@@ -47,10 +47,16 @@ export const archiveStyle = () => child('ui-archive')(
 				gap(rem(0.25)),
 
 				child('ui-result')(
-					display('block'),
-					width(rem(0.75)),
-					height(rem(0.75)),
+					display('flex'),
+					alignItems('center'),
+					justifyContent('center'),
+					width(rem(1)),
+					height(rem(1)),
+					borderRadius(rem(0.2)),
 					background(colorError),
+
+					color(colorBackground),
+					fontSize(rem(0.65)),
 
 					attribute('ui-collaborator')(
 						background(colorWarning)

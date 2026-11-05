@@ -1,4 +1,4 @@
-import { alignSelf, attribute, background, borderLeft, borderRadius, child, color, cursor, display, flexDirection, fontSize, gap, hover, margin, maxWidth, padding, px, rem, textAlign } from "@acryps/style";
+import { alignItems, alignSelf, attribute, background, borderLeft, borderRadius, child, color, cursor, display, flexDirection, fontSize, gap, hover, margin, maxWidth, padding, px, rem, textAlign } from "@acryps/style";
 import { box, boxRadius, colorBackground, colorError, colorHighlight, colorPrimary, colorTextDimmed, colorWarning, fontSizeDetail, fontSizeSubtitle } from "../index.style";
 
 const contentWidth = px(640);
@@ -26,7 +26,9 @@ export const helpStyle = () => child('ui-help')(
 		box(),
 
 		child('ui-title')(
-			display('block'),
+			display('flex'),
+			gap(rem(0.5)),
+			alignItems('center'),
 			color(colorPrimary),
 			fontSize(fontSizeSubtitle)
 		),
@@ -55,7 +57,9 @@ export const helpStyle = () => child('ui-help')(
 				borderLeft(px(4), 'solid', colorError),
 
 				child('ui-name')(
-					display('block'),
+					display('flex'),
+					gap(rem(0.4)),
+					alignItems('center'),
 					color(colorError)
 				),
 

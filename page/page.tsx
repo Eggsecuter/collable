@@ -1,5 +1,5 @@
 import { Component } from "@acryps/page";
-import { brandIcon } from "./.built/icons";
+import { archiveIcon, brandIcon, helpIcon, todayIcon } from "./.built/icons";
 
 export class PageComponent extends Component {
 	render(child) {
@@ -15,9 +15,20 @@ export class PageComponent extends Component {
 				</ui-brand>
 
 				<ui-navigation>
-					<ui-link ui-href='' ui-href-active>Today</ui-link>
-					<ui-link ui-href='/archive' ui-href-active>Archive</ui-link>
-					<ui-link ui-href='/how-to-play' ui-href-active>How to play</ui-link>
+					<ui-link ui-href='' ui-href-active>
+						{todayIcon()}
+						Today
+					</ui-link>
+
+					<ui-link ui-href='/archive' ui-href-active>
+						{archiveIcon()}
+						Archive
+					</ui-link>
+
+					<ui-link ui-href='/how-to-play' ui-href-active>
+						{helpIcon()}
+						How to play
+					</ui-link>
 				</ui-navigation>
 			</ui-header>
 

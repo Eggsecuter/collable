@@ -1,13 +1,16 @@
 import { Component } from "@acryps/page";
-import { CollaborationGraph } from "../quiz/graph";
-import { playAnimation } from "../quiz/animation";
+import { checkIcon, clockIcon, leftIcon, rightIcon, searchIcon, shareIcon } from "../.built/icons";
 import { ArtistService, ArtistViewModel, GuessViewModel, QuizService } from "../managed/services";
-import { formatDay } from "../quiz/day";
+import { playAnimation } from "../quiz/animation";
+import { formatDay, toDay } from "../quiz/day";
+import { CollaborationGraph } from "../quiz/graph";
+import { resultIcon } from "../quiz/result";
 
 export const maximumGuesses = 6;
 const searchDelay = 150;
 const minimumSearchLength = 2;
 const shakeDuration = 400;
+const copiedDuration = 2000;
 
 type Guess = {
 	id: string;
@@ -26,8 +29,13 @@ export class HomePage extends Component {
 	quizService = new QuizService();
 	artistService = new ArtistService();
 
+	today: string;
 	day: string;
 	archived: boolean;
+
+	// neighbouring days of an archived day, the next day of yesterday is today
+	previousDay: string;
+	nextDay: string;
 
 	collaborators: ArtistViewModel[];
 	solution: ArtistViewModel;
@@ -40,6 +48,7 @@ export class HomePage extends Component {
 	guesses: Guess[] = [];
 
 	input: HTMLInputElement;
+	inputBox: HTMLElement;
 	suggestionList: HTMLElement;
 
 	suggestions: ArtistViewModel[] = [];
@@ -48,6 +57,9 @@ export class HomePage extends Component {
 	searchQuery: string;
 
 	submitting = false;
+
+	shareButton: HTMLElement;
+	copiedTimeout: number;
 
 	get solved() {
 		return this.guesses.some(guess => guess.correct);
@@ -58,10 +70,19 @@ export class HomePage extends Component {
 	}
 
 	async onload() {
-		const today = await this.quizService.getDay();
+		this.today = await this.quizService.getDay();
 
-		this.day = this.parameters?.day ?? today;
-		this.archived = this.day != today;
+		this.day = this.parameters?.day ?? this.today;
+		this.archived = this.day != this.today;
+
+		if (this.archived) {
+			// the days are sorted from newest to oldest
+			const days = (await this.quizService.getArchiveDays()).map(dailyArtist => toDay(dailyArtist.day));
+			const index = days.indexOf(this.day);
+
+			this.previousDay = days[index + 1];
+			this.nextDay = days[index - 1];
+		}
 
 		this.collaborators = await this.quizService.getCollaborators(this.day);
 
@@ -101,7 +122,7 @@ export class HomePage extends Component {
 
 		return <ui-home>
 			<ui-prompt>
-				{this.archived ? <ui-date>{formatDay(this.day)}</ui-date> : null}
+				{this.archived ? this.renderDate() : null}
 
 				Who collaborated with all of these artists?
 			</ui-prompt>
@@ -120,10 +141,31 @@ export class HomePage extends Component {
 						return <ui-guess ui-empty></ui-guess>;
 					}
 
-					return <ui-guess ui-correct={guess.correct} ui-collaborator={!!guess.collaborator}>{guess.name}</ui-guess>;
+					return <ui-guess ui-correct={guess.correct} ui-collaborator={!!guess.collaborator}>
+						{resultIcon(guess.correct ? 'correct' : guess.collaborator ? 'collaborator' : 'wrong')}
+
+						<ui-name>{guess.name}</ui-name>
+					</ui-guess>;
 				})}
 			</ui-guesses>
 		</ui-home>;
+	}
+
+	// the arrows keep their place on the first day, so the date does not shift
+	renderDate() {
+		return <ui-date>
+			{this.previousDay ? <ui-step ui-href={`/day/${this.previousDay}`}>
+				{leftIcon()}
+			</ui-step> : <ui-step ui-disabled>
+				{leftIcon()}
+			</ui-step>}
+
+			{formatDay(this.day)}
+
+			<ui-step ui-href={this.nextDay == this.today ? '/' : `/day/${this.nextDay}`}>
+				{rightIcon()}
+			</ui-step>
+		</ui-date>;
 	}
 
 	renderHint() {
@@ -162,10 +204,15 @@ export class HomePage extends Component {
 			{this.suggestionList = <ui-suggestions></ui-suggestions>}
 
 			<ui-field>
-				{this.input = <input placeholder={`Guess the artist (${maximumGuesses - this.guesses.length} left)`} autocomplete="off" spellcheck="false" /> as HTMLInputElement}
+				{this.inputBox = <ui-input>
+					{searchIcon()}
+
+					{this.input = <input placeholder={`Guess the artist (${maximumGuesses - this.guesses.length} left)`} autocomplete="off" spellcheck="false" /> as HTMLInputElement}
+				</ui-input>}
 
 				<ui-submit ui-click={() => this.submit(this.suggestions[this.selectedSuggestion])}>
 					Guess
+					{rightIcon()}
 				</ui-submit>
 			</ui-field>
 		</ui-guess-field>;
@@ -181,11 +228,14 @@ export class HomePage extends Component {
 				{this.solved ? `Solved in ${this.guesses.length}/${maximumGuesses}` : `It was ${this.solution.name}`}
 			</ui-title>
 
-			<ui-share ui-click={() => this.share()}>
+			{this.shareButton = <ui-share ui-click={() => this.share()}>
+				{shareIcon()}
 				Share result
-			</ui-share>
+			</ui-share>}
 
 			<ui-hint>
+				{clockIcon()}
+
 				{this.archived ? 'Play another day from the ' : 'A new artist is waiting tomorrow, until then play previous days in the '}
 				<ui-link ui-href='/archive'>archive</ui-link>
 			</ui-hint>
@@ -250,7 +300,7 @@ export class HomePage extends Component {
 	async submit(artist: ArtistViewModel) {
 		// only known artists can be guessed, so typos do not waste a guess
 		if (!artist) {
-			playAnimation(this.input, 'ui-invalid', shakeDuration);
+			playAnimation(this.inputBox, 'ui-invalid', shakeDuration);
 
 			return;
 		}
@@ -259,7 +309,7 @@ export class HomePage extends Component {
 		const collaborator = this.collaborators.find(collaborator => collaborator.id == artist.id || collaborator.name.toLowerCase() == artist.name.toLowerCase());
 
 		if (collaborator) {
-			playAnimation(this.input, 'ui-invalid', shakeDuration);
+			playAnimation(this.inputBox, 'ui-invalid', shakeDuration);
 			this.graph.highlight(collaborator.name);
 
 			this.suggestions = [];
@@ -321,5 +371,11 @@ export class HomePage extends Component {
 		}
 
 		await navigator.clipboard.writeText(text);
+
+		// copying happens silently, the button confirms it for a moment
+		this.shareButton.replaceChildren(checkIcon(), 'Copied');
+
+		clearTimeout(this.copiedTimeout);
+		this.copiedTimeout = setTimeout(() => this.shareButton.replaceChildren(shareIcon(), 'Share result'), copiedDuration);
 	}
 }

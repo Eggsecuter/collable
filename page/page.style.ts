@@ -58,6 +58,10 @@ export const applicationStyle = () => root() (
 					marginLeft('auto'),
 
 					child('ui-link')(
+						display('flex'),
+						gap(rem(0.4)),
+						alignItems('center'),
+
 						color(colorTextDimmed),
 						cursor('pointer'),
 

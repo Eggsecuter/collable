@@ -1,4 +1,4 @@
-import { alignItems, attribute, background, border, borderRadius, boxShadow, child, color, cursor, display, flexDirection, flexGrow, fontSize, gap, gridTemplateColumns, height, hover, insetInline, left, margin, maxWidth, minHeight, outline, overflow, padding, percentage, placeholder, position, px, rem, repeat, stroke, strokeWidth, textAlign, textOverflow, top, whiteSpace, width, zIndex, vh, bottom, fr, Keyframes, translateX, transform, opacity, hex, fontFamily, milliseconds, empty, focus, borderLeft, min, minMax, scale, flexWrap, justifyContent, textTransform, borderBottom } from "@acryps/style";
+import { alignItems, attribute, background, border, borderRadius, boxShadow, child, color, cursor, display, flexDirection, flexGrow, fontSize, gap, gridTemplateColumns, height, hover, insetInline, left, margin, maxWidth, minHeight, outline, overflow, padding, percentage, placeholder, position, px, rem, repeat, stroke, strokeWidth, textAlign, textOverflow, top, whiteSpace, width, zIndex, vh, bottom, fr, Keyframes, translateX, transform, opacity, hex, fontFamily, milliseconds, empty, focus, borderLeft, min, minMax, scale, flexWrap, justifyContent, textTransform, borderBottom, focusWithin, minWidth, marginRight, flexShrink } from "@acryps/style";
 import { highlightDuration } from "../quiz/graph";
 import { box, boxRadius, colorBackground, colorBackgroundDimmed, colorBorder, colorWarning, colorBoxShadow, colorError, colorHighlight, colorPrimary, colorText, colorTextDimmed, fontSizeDetail, fontSizeSubtitle, fontSizeTitle } from "../index.style";
 
@@ -56,8 +56,32 @@ export const homeStyle = () => child('ui-home')(
 		fontSize(fontSizeSubtitle),
 
 		child('ui-date')(
-			display('block'),
-			color(colorText)
+			display('flex'),
+			gap(rem(1)),
+			alignItems('center'),
+			justifyContent('center'),
+			color(colorText),
+
+			child('ui-step')(
+				display('flex'),
+				padding(rem(0.4)),
+				borderRadius(boxRadius),
+				color(colorTextDimmed),
+				cursor('pointer'),
+
+				hover()(
+					color(colorPrimary)
+				),
+
+				attribute('ui-disabled')(
+					opacity(0.3),
+					cursor('default'),
+
+					hover()(
+						color(colorTextDimmed)
+					)
+				)
+			)
 		)
 	),
 
@@ -143,8 +167,14 @@ export const homeStyle = () => child('ui-home')(
 	child('ui-name-hint')(
 		display('flex'),
 		flexWrap('wrap'),
+		alignItems('center'),
 		justifyContent('center'),
 		gap(rem(0.5), rem(1)),
+
+		child('ui-icon')(
+			color(colorTextDimmed),
+			fontSize(fontSizeSubtitle)
+		),
 
 		child('ui-word')(
 			display('flex'),
@@ -202,33 +232,50 @@ export const homeStyle = () => child('ui-home')(
 			display('flex'),
 			gap(rem(0.5)),
 
-			child('input')(
+			// the box is drawn around the icon and the input, so the icon sits inside the field
+			child('ui-input')(
+				display('flex'),
 				flexGrow(1),
-				height(fieldHeight),
+				gap(rem(0.75)),
+				alignItems('center'),
 				padding(0, rem(1)),
 				box(),
 
-				color(colorText),
-				fontSize(rem(1)),
-				fontFamily('inherit'),
-				outline('none'),
-
-				focus()(
+				focusWithin()(
 					border(px(1), 'solid', colorPrimary)
-				),
-
-				placeholder()(
-					color(colorTextDimmed)
 				),
 
 				attribute('ui-invalid')(
 					border(px(1), 'solid', colorError),
 					shake.animate(milliseconds(300), 'ease-in-out')
+				),
+
+				child('ui-icon')(
+					color(colorTextDimmed)
+				),
+
+				child('input')(
+					flexGrow(1),
+					minWidth(0),
+					height(fieldHeight),
+					padding(0),
+					border('none'),
+
+					background('transparent'),
+					color(colorText),
+					fontSize(rem(1)),
+					fontFamily('inherit'),
+					outline('none'),
+
+					placeholder()(
+						color(colorTextDimmed)
+					)
 				)
 			),
 
 			child('ui-submit')(
 				display('flex'),
+				gap(rem(0.5)),
 				alignItems('center'),
 				padding(0, rem(1.5)),
 				borderRadius(boxRadius),
@@ -296,7 +343,9 @@ export const homeStyle = () => child('ui-home')(
 		),
 
 		child('ui-share')(
-			display('block'),
+			display('flex'),
+			gap(rem(0.5)),
+			alignItems('center'),
 			padding(rem(0.75), rem(1.5)),
 			borderRadius(boxRadius),
 
@@ -310,7 +359,11 @@ export const homeStyle = () => child('ui-home')(
 		),
 
 		child('ui-hint')(
-			display('block'),
+			display('flex'),
+
+			gap(rem(0.25)),
+			alignItems('center'),
+
 			textAlign('center'),
 			color(colorTextDimmed),
 			fontSize(fontSizeDetail),
@@ -328,24 +381,41 @@ export const homeStyle = () => child('ui-home')(
 		gap(rem(0.5)),
 
 		child('ui-guess')(
-			display('block'),
+			display('flex'),
+			gap(rem(0.6)),
+			alignItems('center'),
 			minHeight(rem(1.25)),
 			padding(rem(0.6), rem(1)),
 			box(),
 			borderLeft(px(4), 'solid', colorError),
 
-			whiteSpace('nowrap'),
-			overflow('hidden'),
-			textOverflow('ellipsis'),
+			child('ui-icon')(
+				flexShrink(0),
+				color(colorError)
+			),
+
+			child('ui-name')(
+				whiteSpace('nowrap'),
+				overflow('hidden'),
+				textOverflow('ellipsis')
+			),
 
 			attribute('ui-correct')(
 				borderLeft(px(4), 'solid', colorPrimary),
-				color(colorPrimary)
+				color(colorPrimary),
+
+				child('ui-icon')(
+					color(colorPrimary)
+				)
 			),
 
 			attribute('ui-collaborator')(
 				borderLeft(px(4), 'solid', colorWarning),
-				color(colorWarning)
+				color(colorWarning),
+
+				child('ui-icon')(
+					color(colorWarning)
+				)
 			),
 
 			attribute('ui-empty')(

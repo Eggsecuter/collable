@@ -4,7 +4,7 @@ import { box, colorBackground, colorBorder, colorError, colorPrimary, colorTextD
 const contentWidth = px(640);
 
 // below this width the date gets its own row, so the results are not squeezed
-const stackedWidth = px(480);
+const stackedWidth = px(600);
 
 export const archiveStyle = () => child('ui-archive')(
 	display('flex'),

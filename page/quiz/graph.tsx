@@ -17,6 +17,12 @@ const driftAmplitude = 10;
 // how fast nodes move to their new place when the layout changes, per second
 const layoutSpeed = 3;
 
+// minimal space between labels, large enough that two neighbours drifting towards each other do not touch
+const separationGap = driftAmplitude * 2;
+
+// overlaps are pushed apart in a few passes, as pushing one apart can create a new overlap
+const separationIterations = 8;
+
 // the loop keeps running while the graph is moved between renders, only stop once it is gone for good
 const detachedFramesLimit = 60;
 
@@ -30,8 +36,19 @@ type GraphNode = {
 	angle: number;
 	radius: number;
 
+	// pushes the node away from overlapping labels, eased so the nodes do not jump
+	offsetX: number;
+	offsetY: number;
+
 	phase: number;
 	speed: number;
+};
+
+type Box = {
+	x: number;
+	y: number;
+	width: number;
+	height: number;
 };
 
 // rendered once and kept across page updates, so layout changes can be animated
@@ -144,6 +161,8 @@ export class CollaborationGraph extends Component {
 			element,
 			angle: 0,
 			radius: 0,
+			offsetX: 0,
+			offsetY: 0,
 			phase: index * 2.4,
 			speed: 0.4 + (index * 0.37 % 1) * 0.4
 		};
@@ -167,21 +186,40 @@ export class CollaborationGraph extends Component {
 			const elapsed = previousTime ? (time - previousTime) / 1000 : 0;
 			const easing = reducedMotion ? 1 : 1 - Math.exp(-elapsed * layoutSpeed);
 
+			// the first frame is placed without overlaps right away
+			const offsetEasing = previousTime ? easing : 1;
+
 			previousTime = time;
 
 			const width = this.element.clientWidth;
 			const height = this.element.clientHeight;
 
-			const centerPosition = this.place(this.center, width / 2, height / 2, time, reducedMotion ? 0 : driftAmplitude / 2);
+			const center = this.measure(this.center, width / 2, height / 2);
 
-			this.collaborators.forEach((node, index) => {
+			// resting positions on the orbits, the drift is added after the overlaps are resolved
+			const resting = this.collaborators.map((node, index) => {
 				node.angle += (this.targetAngle(index) - node.angle) * easing;
 				node.radius += (this.targetRadius(index) - node.radius) * easing;
 
-				const position = this.place(
+				return this.measure(
 					node,
 					width / 2 + Math.cos(node.angle) * width / 2 * node.radius,
-					height / 2 + Math.sin(node.angle) * height / 2 * node.radius,
+					height / 2 + Math.sin(node.angle) * height / 2 * node.radius
+				);
+			});
+
+			const separated = this.separate(resting, center, width, height);
+
+			const centerPosition = this.place(this.center, center.x, center.y, time, reducedMotion ? 0 : driftAmplitude / 2);
+
+			this.collaborators.forEach((node, index) => {
+				node.offsetX += (separated[index].x - resting[index].x - node.offsetX) * offsetEasing;
+				node.offsetY += (separated[index].y - resting[index].y - node.offsetY) * offsetEasing;
+
+				const position = this.place(
+					node,
+					resting[index].x + node.offsetX,
+					resting[index].y + node.offsetY,
 					time,
 					reducedMotion ? 0 : driftAmplitude
 				);
@@ -196,6 +234,78 @@ export class CollaborationGraph extends Component {
 		};
 
 		requestAnimationFrame(frame);
+	}
+
+	private measure(node: GraphNode, x: number, y: number): Box {
+		return { x, y, width: node.element.offsetWidth, height: node.element.offsetHeight };
+	}
+
+	// narrow graphs can not fit the wide labels on the orbits, so overlapping labels are pushed apart and kept inside the graph
+	private separate(resting: Box[], center: Box, width: number, height: number) {
+		const boxes = resting.map(box => ({ ...box }));
+
+		for (let iteration = 0; iteration < separationIterations; iteration++) {
+			let overlapping = false;
+
+			boxes.forEach((box, index) => {
+				for (let other of [center, ...boxes.slice(index + 1)]) {
+					const deltaX = box.x - other.x;
+					const deltaY = box.y - other.y;
+
+					const overlapX = (box.width + other.width) / 2 + separationGap - Math.abs(deltaX);
+					const overlapY = (box.height + other.height) / 2 + separationGap - Math.abs(deltaY);
+
+					if (overlapX <= 0 || overlapY <= 0) {
+						continue;
+					}
+
+					overlapping = true;
+
+					// the center stays in place, two collaborators share the push
+					const share = other == center ? 1 : 0.5;
+
+					const pushX = overlapX * share * (Math.sign(deltaX) || 1);
+					const pushY = overlapY * share * (Math.sign(deltaY) || 1);
+
+					// push along the axis which needs the smaller move, unless a label would be pushed out of the graph that way
+					const horizontalFits = this.fits(box, pushX, 0, width, height) && (other == center || this.fits(other, -pushX, 0, width, height));
+					const verticalFits = this.fits(box, 0, pushY, width, height) && (other == center || this.fits(other, 0, -pushY, width, height));
+
+					if (horizontalFits == verticalFits ? overlapX < overlapY : horizontalFits) {
+						box.x += pushX;
+						other.x -= other == center ? 0 : pushX;
+					} else {
+						box.y += pushY;
+						other.y -= other == center ? 0 : pushY;
+					}
+				}
+			});
+
+			for (let box of boxes) {
+				box.x = this.clamp(box.x, box.width / 2 + driftAmplitude, width - box.width / 2 - driftAmplitude);
+				box.y = this.clamp(box.y, box.height / 2 + driftAmplitude, height - box.height / 2 - driftAmplitude);
+			}
+
+			if (!overlapping) {
+				break;
+			}
+		}
+
+		return boxes;
+	}
+
+	// whether the box stays inside the graph after being moved, with a pixel of tolerance for labels resting at the edge
+	private fits(box: Box, moveX: number, moveY: number, width: number, height: number) {
+		const x = box.x + moveX;
+		const y = box.y + moveY;
+
+		return x - box.width / 2 >= driftAmplitude - 1 && x + box.width / 2 <= width - driftAmplitude + 1
+			&& y - box.height / 2 >= driftAmplitude - 1 && y + box.height / 2 <= height - driftAmplitude + 1;
+	}
+
+	// labels wider than the graph stay centered
+	private clamp(value: number, minimum: number, maximum: number) {
+		return minimum > maximum ? (minimum + maximum) / 2 : Math.min(Math.max(value, minimum), maximum);
 	}
 
 	private place(node: GraphNode, x: number, y: number, time: number, amplitude: number) {

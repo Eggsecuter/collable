@@ -1,7 +1,7 @@
 import { json } from "express";
 import { join } from "path";
 import { DbClient, RunContext } from "vlquery";
-import { StaticFileRoute, ViewModel } from "vlserver";
+import { Inject, StaticFileRoute, ViewModel } from "vlserver";
 import { DbContext } from "./managed/database";
 import { ManagedServer } from "./managed/server";
 
@@ -12,6 +12,10 @@ DbClient.connectedClient.connect().then(async () => {
 
 	const app = new ManagedServer();
 	app.app.use(json());
+
+	app.createInjector = () => new Inject({
+		DbContext: database
+	});
 
 	ViewModel.globalFetchingContext = database;
 

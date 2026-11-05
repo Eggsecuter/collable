@@ -1,6 +1,7 @@
 import { alignItems, background, child, color, display, fontSize, gap, height, insetInline, margin, marginTop, padding, position, rem, root, top } from "@acryps/style";
 import { iconFont, icons } from "./.built/icons";
 import { mediumFont } from "./assets/font/index.style";
+import { homeStyle } from "./home/index.style";
 import { colorBackground, colorBackgroundDimmed, colorPrimary, colorText, fontSizeNavigation } from "./index.style";
 
 const headerInnerHeight = rem(3);
@@ -52,7 +53,9 @@ export const applicationStyle = () => root() (
 			child('ui-main')(
 				display('block'),
 				marginTop(headerTotalHeight),
-				padding(headerInlinePadding)
+				padding(headerInlinePadding),
+
+				homeStyle()
 			)
 		)
 	)

@@ -10,7 +10,8 @@ export class ArtistQueryProxy extends QueryProxy {
 }
 
 export class Artist extends Entity<ArtistQueryProxy> {
-	fromCollaborations: PrimaryReference<Collaboration, CollaborationQueryProxy>;
+	dailyArtists: PrimaryReference<DailyArtist, DailyArtistQueryProxy>;
+		fromCollaborations: PrimaryReference<Collaboration, CollaborationQueryProxy>;
 		toCollaborations: PrimaryReference<Collaboration, CollaborationQueryProxy>;
 		chartHits: string;
 	followers: number;
@@ -39,6 +40,7 @@ export class Artist extends Entity<ArtistQueryProxy> {
 	constructor() {
 		super();
 
+		this.dailyArtists = new PrimaryReference<DailyArtist, DailyArtistQueryProxy>(this, "artistId", DailyArtist);
 		this.fromCollaborations = new PrimaryReference<Collaboration, CollaborationQueryProxy>(this, "fromArtistId", Collaboration);
 		this.toCollaborations = new PrimaryReference<Collaboration, CollaborationQueryProxy>(this, "toArtistId", Collaboration);
 	}
@@ -110,14 +112,64 @@ export class Collaboration extends Entity<CollaborationQueryProxy> {
 	
 }
 			
+export class DailyArtistQueryProxy extends QueryProxy {
+	get artist(): Partial<ArtistQueryProxy> { throw new Error("Invalid use of QueryModels. QueryModels cannot be used during runtime"); }
+	get artistId(): Partial<QueryUUID> { throw new Error("Invalid use of QueryModels. QueryModels cannot be used during runtime"); }
+	get day(): Partial<QueryDate> { throw new Error("Invalid use of QueryModels. QueryModels cannot be used during runtime"); }
+	get hintSeed(): Partial<QueryNumber> { throw new Error("Invalid use of QueryModels. QueryModels cannot be used during runtime"); }
+}
+
+export class DailyArtist extends Entity<DailyArtistQueryProxy> {
+	get artist(): Partial<ForeignReference<Artist>> { return this.$artist; }
+	artistId: string;
+	day: Date;
+	hintSeed: number;
+	declare id: string;
+
+	$$meta = {
+		source: "daily_artist",
+		columns: {
+			artistId: { type: "uuid", name: "artist_id" },
+			day: { type: "date", name: "day" },
+			hintSeed: { type: "int4", name: "hint_seed" },
+			id: { type: "uuid", name: "id" }
+		},
+		get set(): DbSet<DailyArtist, DailyArtistQueryProxy> {
+			return new DbSet<DailyArtist, DailyArtistQueryProxy>(DailyArtist, null);
+		}
+	};
+
+	constructor() {
+		super();
+
+		this.$artist = new ForeignReference<Artist>(this, "artistId", Artist);
+	}
+
+	private $artist: ForeignReference<Artist>;
+
+	set artist(value: Partial<ForeignReference<Artist>>) {
+		if (value) {
+			if (!value.id) { throw new Error("Invalid null id. Save the referenced model prior to creating a reference to it."); }
+
+			this.artistId = value.id as string;
+		} else {
+			this.artistId = null;
+		}
+	}
+
+	
+}
+			
 
 export class DbContext {
 	artist: DbSet<Artist, ArtistQueryProxy>;
 	collaboration: DbSet<Collaboration, CollaborationQueryProxy>;
+	dailyArtist: DbSet<DailyArtist, DailyArtistQueryProxy>;
 
 	constructor(private runContext: RunContext) {
 		this.artist = new DbSet<Artist, ArtistQueryProxy>(Artist, this.runContext);
 		this.collaboration = new DbSet<Collaboration, CollaborationQueryProxy>(Collaboration, this.runContext);
+		this.dailyArtist = new DbSet<DailyArtist, DailyArtistQueryProxy>(DailyArtist, this.runContext);
 	}
 
 	findSet(modelType) {

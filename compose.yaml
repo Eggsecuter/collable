@@ -9,6 +9,6 @@ services:
     ports:
       - "7060:7060"
     env_file:
-      - ${COLLABLE_ENV:-~/.config/collable/collable.env}
+      - ${COLLABLE_ENV:-../environment/collable/collable.env}
     extra_hosts:
       - "host.docker.internal:host-gateway"

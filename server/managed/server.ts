@@ -6,10 +6,12 @@ import { ArtistService } from "././../artist/service";
 import { QuizManager } from "././../quiz/manager";
 import { ArchiveDayViewModel } from "././../quiz/model";
 import { ArchiveGuessViewModel } from "././../quiz/model";
+import { CollaboratorViewModel } from "././../quiz/model";
 import { GuessViewModel } from "././../quiz/model";
 import { QuizService } from "././../quiz/service";
 import { Artist } from "./../managed/database";
 import { Guess } from "./../managed/database";
+import { DailyArtistCollaborator } from "./../managed/database";
 import { DailyArtist } from "./../managed/database";
 
 Inject.mappings = {
@@ -197,6 +199,7 @@ ViewModel.mappings = {
 		async map() {
 			return {
 				artist: new ArtistViewModel(await BaseServer.unwrap(this.$$model.artist)),
+				collaborationCount: this.$$model.collaborationCount,
 				graphIndex: this.$$model.graphIndex,
 				id: this.$$model.id,
 				result: this.$$model.result
@@ -235,6 +238,7 @@ ViewModel.mappings = {
 						[...parents, "artist-GuessViewModel"]
 					);
 				},
+				collaborationCount: true,
 				graphIndex: true,
 				id: true,
 				result: true
@@ -244,6 +248,7 @@ ViewModel.mappings = {
 		static toViewModel(data) {
 			const item = new GuessViewModel(null);
 			"artist" in data && (item.artist = data.artist && ViewModel.mappings[ArtistViewModel.name].toViewModel(data.artist));
+			"collaborationCount" in data && (item.collaborationCount = data.collaborationCount === null ? null : +data.collaborationCount);
 			"graphIndex" in data && (item.graphIndex = data.graphIndex === null ? null : +data.graphIndex);
 			"id" in data && (item.id = data.id === null ? null : `${data.id}`);
 			"result" in data && (item.result = data.result === null ? null : `${data.result}`);
@@ -261,9 +266,81 @@ ViewModel.mappings = {
 			}
 
 			"artist" in viewModel && (model.artist.id = viewModel.artist ? viewModel.artist.id : null);
+			"collaborationCount" in viewModel && (model.collaborationCount = viewModel.collaborationCount === null ? null : +viewModel.collaborationCount);
 			"graphIndex" in viewModel && (model.graphIndex = viewModel.graphIndex === null ? null : +viewModel.graphIndex);
 			"id" in viewModel && (model.id = viewModel.id === null ? null : `${viewModel.id}`);
 			"result" in viewModel && (model.result = viewModel.result === null ? null : `${viewModel.result}`);
+
+			return model;
+		}
+	},
+	[CollaboratorViewModel.name]: class ComposedCollaboratorViewModel extends CollaboratorViewModel {
+		async map() {
+			return {
+				artist: new ArtistViewModel(await BaseServer.unwrap(this.$$model.artist)),
+				count: this.$$model.count,
+				id: this.$$model.id
+			}
+		};
+
+		static get items() {
+			return this.getPrefetchingProperties(ViewModel.maximumPrefetchingRecursionDepth, []);
+		}
+
+		static getPrefetchingProperties(level: number, parents: string[]) {
+			let repeats = false;
+
+			for (let size = 1; size <= parents.length / 2; size++) {
+				if (!repeats) {
+					for (let index = 0; index < parents.length; index++) {
+						if (parents[parents.length - 1 - index] == parents[parents.length - 1 - index - size]) {
+							repeats = true;
+						}
+					}
+				}
+			}
+
+			if (repeats) {
+				level--;
+			}
+
+			if (!level) {
+				return {};
+			}
+
+			return {
+				get artist() {
+					return ViewModel.mappings[ArtistViewModel.name].getPrefetchingProperties(
+						level,
+						[...parents, "artist-CollaboratorViewModel"]
+					);
+				},
+				count: true,
+				id: true
+			};
+		};
+
+		static toViewModel(data) {
+			const item = new CollaboratorViewModel(null);
+			"artist" in data && (item.artist = data.artist && ViewModel.mappings[ArtistViewModel.name].toViewModel(data.artist));
+			"count" in data && (item.count = data.count === null ? null : +data.count);
+			"id" in data && (item.id = data.id === null ? null : `${data.id}`);
+
+			return item;
+		}
+
+		static async toModel(viewModel: CollaboratorViewModel) {
+			let model: DailyArtistCollaborator;
+
+			if (viewModel.id) {
+				model = await ViewModel.globalFetchingContext.findSet(DailyArtistCollaborator).find(viewModel.id)
+			} else {
+				model = new DailyArtistCollaborator();
+			}
+
+			"artist" in viewModel && (model.artist.id = viewModel.artist ? viewModel.artist.id : null);
+			"count" in viewModel && (model.count = viewModel.count === null ? null : +viewModel.count);
+			"id" in viewModel && (model.id = viewModel.id === null ? null : `${viewModel.id}`);
 
 			return model;
 		}

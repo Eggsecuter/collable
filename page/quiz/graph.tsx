@@ -32,6 +32,9 @@ type GraphNode = {
 	element: HTMLElement;
 	line?: SVGLineElement;
 
+	// number of songs together, shown on the line
+	count?: HTMLElement;
+
 	// current layout, eased towards the target layout of the nodes index
 	angle: number;
 	radius: number;
@@ -51,6 +54,26 @@ type Box = {
 	height: number;
 };
 
+export type Collaborator = {
+	name: string;
+	count: number;
+};
+
+// shortens large song counts, 1200 becomes 1.2T and 13000000 becomes 13M
+export const formatCount = (count: number) => {
+	for (let [unit, size] of [['M', 1e6], ['T', 1e3]] as const) {
+		// counts which would round up to 1000 of the smaller unit already use the larger one, 999800 shows as 1M instead of 1000T
+		if (count >= size * 0.9995) {
+			const value = count / size;
+
+			// one decimal for single digits only, 10T and 820T are wide enough already
+			return `${value < 9.95 ? Math.round(value * 10) / 10 : Math.round(value)}${unit}`;
+		}
+	}
+
+	return `${count}`;
+};
+
 // rendered once and kept across page updates, so layout changes can be animated
 export class CollaborationGraph extends Component {
 	element: HTMLElement;
@@ -63,15 +86,15 @@ export class CollaborationGraph extends Component {
 	nodeCount = 0;
 
 	constructor(
-		collaboratorNames: string[]
+		collaborators: Collaborator[]
 	) {
 		super();
 
 		this.lines = document.createElementNS(svgNamespace, 'svg');
 		this.center = this.createNode('?', <ui-node ui-center>?</ui-node>);
 
-		for (let name of collaboratorNames) {
-			this.addCollaborator(name, this.collaborators.length);
+		for (let collaborator of collaborators) {
+			this.addCollaborator(collaborator.name, collaborator.count, this.collaborators.length);
 		}
 	}
 
@@ -85,6 +108,7 @@ export class CollaborationGraph extends Component {
 
 			this.element = <ui-graph>
 				{this.lines}
+				{this.collaborators.map(node => node.count)}
 
 				{this.collaborators.map(node => node.element)}
 				{this.center.element}
@@ -97,9 +121,10 @@ export class CollaborationGraph extends Component {
 	}
 
 	// adds a collaborator at the index, the following nodes move away to make room when animated
-	addCollaborator(name: string, index: number, guessed = false, animated = false) {
+	addCollaborator(name: string, count: number, index: number, guessed = false, animated = false) {
 		const node = this.createNode(name, <ui-node ui-guessed={guessed}>{name}</ui-node>);
 		node.line = document.createElementNS(svgNamespace, 'line');
+		node.count = <ui-count ui-guessed={guessed}>{formatCount(count)}</ui-count>;
 
 		if (guessed) {
 			node.line.setAttribute('ui-guessed', '');
@@ -118,13 +143,15 @@ export class CollaborationGraph extends Component {
 			node.radius = (previous.radius + (next ?? this.collaborators[0]).radius) / 2;
 
 			playAnimation(node.element, 'ui-appearing', highlightDuration);
+			playAnimation(node.count, 'ui-appearing', highlightDuration);
 		} else {
 			node.angle = this.targetAngle(index);
 			node.radius = this.targetRadius(index);
 		}
 
-		// nodes are drawn above the lines
+		// nodes are drawn above the lines and counts
 		this.lines.appendChild(node.line);
+		this.lines.after(node.count);
 		this.element?.insertBefore(node.element, this.center.element);
 	}
 
@@ -228,12 +255,31 @@ export class CollaborationGraph extends Component {
 				node.line.setAttribute('y1', `${centerPosition.y}`);
 				node.line.setAttribute('x2', `${position.x}`);
 				node.line.setAttribute('y2', `${position.y}`);
+
+				// halfway along the part of the line visible between the two labels
+				const share = this.visibleMiddle(centerPosition, center, position, resting[index]);
+
+				node.count.style.transform = `translate(${centerPosition.x + (position.x - centerPosition.x) * share}px, ${centerPosition.y + (position.y - centerPosition.y) * share}px) translate(-50%, -50%)`;
 			});
 
 			requestAnimationFrame(frame);
 		};
 
 		requestAnimationFrame(frame);
+	}
+
+	// share of the line from the center where the visible part between the labels is halfway, the middle of the line if the labels overlap
+	private visibleMiddle(from: { x: number, y: number }, fromBox: Box, to: { x: number, y: number }, toBox: Box) {
+		const deltaX = Math.abs(to.x - from.x);
+		const deltaY = Math.abs(to.y - from.y);
+
+		// share of the line covered by a label, centered on one of its ends
+		const covered = (box: Box) => Math.min(box.width / 2 / deltaX, box.height / 2 / deltaY);
+
+		const start = covered(fromBox);
+		const end = 1 - covered(toBox);
+
+		return start < end ? (start + end) / 2 : 0.5;
 	}
 
 	private measure(node: GraphNode, x: number, y: number): Box {

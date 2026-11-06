@@ -84,10 +84,9 @@ export class QuizManager extends Manager {
 			return stored;
 		}
 
-		const collaborators = await this.calculateCollaborators(await dailyArtist.artist.fetch());
-		await this.storeCollaborators(dailyArtist.id, collaborators);
+		await this.storeCollaborators(dailyArtist.id, await this.calculateCollaborators(await dailyArtist.artist.fetch()));
 
-		return collaborators;
+		return await this.findStoredCollaborators(dailyArtist.id);
 	}
 
 	// the players guesses of the day in the order they were made
@@ -143,10 +142,14 @@ export class QuizManager extends Manager {
 		guess.guessed = new Date();
 		guess.dailyArtistId = dailyArtist.id;
 		guess.artistId = guessed.id;
-		guess.result = await this.check(artist, guessed);
+
+		const collaborators = (await this.findCollaborators([artist.id])).get(artist.id);
+		guess.result = this.check(artist, guessed, collaborators);
 
 		// collaborators join the graph between two random neighbours, stored so the graph looks the same on the next visit
 		if (guess.result == 'collaborator') {
+			guess.collaborationCount = collaborators.get(guessed.id);
+
 			const shownCollaborators = (await this.getCollaborators(day)).length + previousGuesses.filter(previous => previous.result == 'collaborator').length;
 
 			guess.graphIndex = 1 + Math.floor(Math.random() * shownCollaborators);
@@ -195,15 +198,13 @@ export class QuizManager extends Manager {
 	}
 
 	// 'correct' for the days artist, 'collaborator' for anyone who collaborated with them, 'wrong' otherwise
-	private async check(artist: Artist, guessed: Artist): Promise<GuessResult> {
+	private check(artist: Artist, guessed: Artist, collaborators: Map<string, number>): GuessResult {
 		// some artists exist multiple times with the same name
 		if (guessed.id == artist.id || guessed.name.toLowerCase() == artist.name.toLowerCase()) {
 			return 'correct';
 		}
 
-		const collaborators = await this.findCollaborators([artist.id]);
-
-		if (collaborators.get(artist.id)?.has(guessed.id)) {
+		if (collaborators?.has(guessed.id)) {
 			return 'collaborator';
 		}
 
@@ -248,7 +249,7 @@ export class QuizManager extends Manager {
 		return pool[Math.floor(Math.random() * pool.length)];
 	}
 
-	// the collaborators of the artist with the most songs together
+	// the collaborators of the artist with the most songs together, with the number of songs
 	private async calculateCollaborators(artist: Artist) {
 		const collaborators = await this.findCollaborators([artist.id]);
 		const counts = collaborators.get(artist.id) ?? new Map<string, number>();
@@ -272,25 +273,24 @@ export class QuizManager extends Manager {
 			.map(collaborator => ({ collaborator, score: score(collaborator) }))
 			.sort((a, b) => b.score - a.score || (a.collaborator.id < b.collaborator.id ? -1 : 1))
 			.slice(0, maximumCollaborators)
-			.map(scored => scored.collaborator);
+			.map(scored => ({ artist: scored.collaborator, count: counts.get(scored.collaborator.id) }));
 	}
 
-	private async findStoredCollaborators(dailyArtistId: string) {
-		const stored = await this.database.dailyArtistCollaborator
+	private findStoredCollaborators(dailyArtistId: string) {
+		return this.database.dailyArtistCollaborator
 			.where(collaborator => collaborator.dailyArtistId.valueOf() == dailyArtistId)
 			.orderByAscending(collaborator => collaborator.rank)
 			.include(collaborator => collaborator.artist)
 			.toArray();
-
-		return await Promise.all(stored.map(collaborator => collaborator.artist.fetch()));
 	}
 
 	// a concurrent first request calculates the same graph, rows failing on the unique constraint were stored by that request
-	private async storeCollaborators(dailyArtistId: string, collaborators: Artist[]) {
-		await Promise.allSettled(collaborators.map((artist, rank) => {
+	private async storeCollaborators(dailyArtistId: string, collaborators: { artist: Artist, count: number }[]) {
+		await Promise.allSettled(collaborators.map(({ artist, count }, rank) => {
 			const collaborator = new DailyArtistCollaborator();
 			collaborator.dailyArtistId = dailyArtistId;
 			collaborator.artistId = artist.id;
+			collaborator.count = count;
 			collaborator.rank = rank;
 
 			return collaborator.create();

@@ -1,6 +1,6 @@
 import { Component } from "@acryps/page";
 import { checkIcon, clockIcon, leftIcon, rightIcon, searchIcon, shareIcon } from "../.built/icons";
-import { ArtistService, ArtistViewModel, GuessViewModel, QuizService } from "../managed/services";
+import { ArtistService, ArtistViewModel, CollaboratorViewModel, GuessViewModel, QuizService } from "../managed/services";
 import { playAnimation } from "../quiz/animation";
 import { formatDay, toDay } from "../quiz/day";
 import { CollaborationGraph } from "../quiz/graph";
@@ -20,6 +20,7 @@ type Guess = {
 	// collaborated with the solution, added to the graph at the index
 	collaborator?: boolean;
 	graphIndex?: number;
+	collaborationCount?: number;
 };
 
 // plays today, or a previous day when opened from the archive
@@ -37,7 +38,7 @@ export class HomePage extends Component {
 	previousDay: string;
 	nextDay: string;
 
-	collaborators: ArtistViewModel[];
+	collaborators: CollaboratorViewModel[];
 	solution: ArtistViewModel;
 
 	// one entry per character of the solution, null for letters which are not revealed yet
@@ -90,11 +91,11 @@ export class HomePage extends Component {
 		this.guesses = (await this.quizService.getGuesses(this.day)).map(guess => this.toGuess(guess));
 
 		// the graph is kept across updates, so new collaborators can be animated in
-		this.graph = new CollaborationGraph(this.collaborators.map(collaborator => collaborator.name));
+		this.graph = new CollaborationGraph(this.collaborators.map(collaborator => ({ name: collaborator.artist.name, count: collaborator.count })));
 
 		for (let guess of this.guesses) {
 			if (guess.collaborator) {
-				this.graph.addCollaborator(guess.name, guess.graphIndex, true);
+				this.graph.addCollaborator(guess.name, guess.collaborationCount, guess.graphIndex, true);
 			}
 		}
 
@@ -306,7 +307,7 @@ export class HomePage extends Component {
 		}
 
 		// collaborators are visible in the graph already, point them out instead of using up a guess
-		const collaborator = this.collaborators.find(collaborator => collaborator.id == artist.id || collaborator.name.toLowerCase() == artist.name.toLowerCase());
+		const collaborator = this.collaborators.map(collaborator => collaborator.artist).find(collaborator => collaborator.id == artist.id || collaborator.name.toLowerCase() == artist.name.toLowerCase());
 
 		if (collaborator) {
 			playAnimation(this.inputBox, 'ui-invalid', shakeDuration);
@@ -337,7 +338,7 @@ export class HomePage extends Component {
 
 		// half correct guesses join the graph at the position chosen by the server
 		if (guess.collaborator) {
-			this.graph.addCollaborator(guess.name, guess.graphIndex, true, true);
+			this.graph.addCollaborator(guess.name, guess.collaborationCount, guess.graphIndex, true, true);
 		}
 
 		this.guesses.push(guess);
@@ -353,7 +354,8 @@ export class HomePage extends Component {
 			name: guess.artist.name,
 			correct: guess.result == 'correct',
 			collaborator: guess.result == 'collaborator',
-			graphIndex: guess.graphIndex
+			graphIndex: guess.graphIndex,
+			collaborationCount: guess.collaborationCount
 		};
 	}
 

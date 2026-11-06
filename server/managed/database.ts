@@ -175,6 +175,7 @@ export class DailyArtistCollaboratorQueryProxy extends QueryProxy {
 	get artist(): Partial<ArtistQueryProxy> { throw new Error("Invalid use of QueryModels. QueryModels cannot be used during runtime"); }
 	get dailyArtist(): Partial<DailyArtistQueryProxy> { throw new Error("Invalid use of QueryModels. QueryModels cannot be used during runtime"); }
 	get artistId(): Partial<QueryUUID> { throw new Error("Invalid use of QueryModels. QueryModels cannot be used during runtime"); }
+	get count(): Partial<QueryNumber> { throw new Error("Invalid use of QueryModels. QueryModels cannot be used during runtime"); }
 	get dailyArtistId(): Partial<QueryUUID> { throw new Error("Invalid use of QueryModels. QueryModels cannot be used during runtime"); }
 	get rank(): Partial<QueryNumber> { throw new Error("Invalid use of QueryModels. QueryModels cannot be used during runtime"); }
 }
@@ -183,6 +184,7 @@ export class DailyArtistCollaborator extends Entity<DailyArtistCollaboratorQuery
 	get artist(): Partial<ForeignReference<Artist>> { return this.$artist; }
 	get dailyArtist(): Partial<ForeignReference<DailyArtist>> { return this.$dailyArtist; }
 	artistId: string;
+	count: number;
 	dailyArtistId: string;
 	declare id: string;
 	rank: number;
@@ -191,6 +193,7 @@ export class DailyArtistCollaborator extends Entity<DailyArtistCollaboratorQuery
 		source: "daily_artist_collaborator",
 		columns: {
 			artistId: { type: "uuid", name: "artist_id" },
+			count: { type: "int4", name: "count" },
 			dailyArtistId: { type: "uuid", name: "daily_artist_id" },
 			id: { type: "uuid", name: "id" },
 			rank: { type: "int4", name: "rank" }
@@ -238,6 +241,7 @@ export class GuessQueryProxy extends QueryProxy {
 	get artist(): Partial<ArtistQueryProxy> { throw new Error("Invalid use of QueryModels. QueryModels cannot be used during runtime"); }
 	get dailyArtist(): Partial<DailyArtistQueryProxy> { throw new Error("Invalid use of QueryModels. QueryModels cannot be used during runtime"); }
 	get artistId(): Partial<QueryUUID> { throw new Error("Invalid use of QueryModels. QueryModels cannot be used during runtime"); }
+	get collaborationCount(): Partial<QueryNumber> { throw new Error("Invalid use of QueryModels. QueryModels cannot be used during runtime"); }
 	get dailyArtistId(): Partial<QueryUUID> { throw new Error("Invalid use of QueryModels. QueryModels cannot be used during runtime"); }
 	get graphIndex(): Partial<QueryNumber> { throw new Error("Invalid use of QueryModels. QueryModels cannot be used during runtime"); }
 	get guessed(): Partial<QueryTimeStamp> { throw new Error("Invalid use of QueryModels. QueryModels cannot be used during runtime"); }
@@ -249,6 +253,7 @@ export class Guess extends Entity<GuessQueryProxy> {
 	get artist(): Partial<ForeignReference<Artist>> { return this.$artist; }
 	get dailyArtist(): Partial<ForeignReference<DailyArtist>> { return this.$dailyArtist; }
 	artistId: string;
+	collaborationCount: number;
 	dailyArtistId: string;
 	graphIndex: number;
 	guessed: Date;
@@ -260,6 +265,7 @@ export class Guess extends Entity<GuessQueryProxy> {
 		source: "guess",
 		columns: {
 			artistId: { type: "uuid", name: "artist_id" },
+			collaborationCount: { type: "int4", name: "collaboration_count" },
 			dailyArtistId: { type: "uuid", name: "daily_artist_id" },
 			graphIndex: { type: "int4", name: "graph_index" },
 			guessed: { type: "timestamp", name: "guessed" },

@@ -13,6 +13,7 @@ export class ArtistViewModel {
 
 export class GuessViewModel {
 	artist: ArtistViewModel;
+	collaborationCount: number;
 	graphIndex: number;
 	id: string;
 	result: string;
@@ -20,9 +21,25 @@ export class GuessViewModel {
 	private static $build(raw) {
 		const item = new GuessViewModel();
 		raw.artist === undefined || (item.artist = raw.artist ? ArtistViewModel["$build"](raw.artist) : null)
+		raw.collaborationCount === undefined || (item.collaborationCount = raw.collaborationCount === null ? null : +raw.collaborationCount)
 		raw.graphIndex === undefined || (item.graphIndex = raw.graphIndex === null ? null : +raw.graphIndex)
 		raw.id === undefined || (item.id = raw.id === null ? null : `${raw.id}`)
 		raw.result === undefined || (item.result = raw.result === null ? null : `${raw.result}`)
+		
+		return item;
+	}
+}
+
+export class CollaboratorViewModel {
+	artist: ArtistViewModel;
+	count: number;
+	id: string;
+
+	private static $build(raw) {
+		const item = new CollaboratorViewModel();
+		raw.artist === undefined || (item.artist = raw.artist ? ArtistViewModel["$build"](raw.artist) : null)
+		raw.count === undefined || (item.count = raw.count === null ? null : +raw.count)
+		raw.id === undefined || (item.id = raw.id === null ? null : `${raw.id}`)
 		
 		return item;
 	}
@@ -179,7 +196,7 @@ export class QuizService {
 		});
 	}
 
-	async getCollaborators(day: string): Promise<Array<ArtistViewModel>> {
+	async getCollaborators(day: string): Promise<Array<CollaboratorViewModel>> {
 		const $data = new FormData();
 		$data.append("V1ZzhvdGF5dXhraGk1YW5oN2pkYWQ2YW", Service.stringify(day))
 
@@ -191,7 +208,7 @@ export class QuizService {
 			if ("data" in r) {
 				const d = r.data;
 
-				return d.map(d => d === null ? null : ArtistViewModel["$build"](d));
+				return d.map(d => d === null ? null : CollaboratorViewModel["$build"](d));
 			} else if ("aborted" in r) {
 				throw new Error("request aborted by server");
 			} else if ("error" in r) {

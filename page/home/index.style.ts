@@ -114,6 +114,30 @@ export const homeStyle = () => child('ui-home')(
 			)
 		),
 
+		// number of songs together, sits on the line and covers it with the background
+		child('ui-count')(
+			position('absolute'),
+			top(0),
+			left(0),
+
+			display('block'),
+			padding(rem(0.1), rem(0.4)),
+			borderRadius(rem(1)),
+			background(colorBackground),
+
+			whiteSpace('nowrap'),
+			color(colorTextDimmed),
+			fontSize(rem(0.7)),
+
+			attribute('ui-guessed')(
+				color(colorWarning)
+			),
+
+			attribute('ui-appearing')(
+				appear.animate(milliseconds(highlightDuration), 'ease-out')
+			)
+		),
+
 		child('ui-node')(
 			position('absolute'),
 			top(0),

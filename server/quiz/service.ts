@@ -1,7 +1,7 @@
 import { Service } from "vlserver";
 import { ArtistViewModel } from "../artist/model";
 import { QuizManager } from "./manager";
-import { ArchiveDayViewModel, ArchiveGuessViewModel, GuessViewModel } from "./model";
+import { ArchiveDayViewModel, ArchiveGuessViewModel, CollaboratorViewModel, GuessViewModel } from "./model";
 
 export class QuizService extends Service {
 	constructor(
@@ -24,7 +24,7 @@ export class QuizService extends Service {
 	}
 
 	async getCollaborators(day: string) {
-		return ArtistViewModel.from(await this.manager.getCollaborators(day));
+		return CollaboratorViewModel.from(await this.manager.getCollaborators(day));
 	}
 
 	// the guesses of the player identified by their cookie

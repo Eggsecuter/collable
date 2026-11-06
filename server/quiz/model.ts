@@ -1,6 +1,6 @@
 import { ViewModel } from "vlserver";
 import { ArtistViewModel } from "../artist/model";
-import { DailyArtist, Guess } from "../managed/database";
+import { DailyArtist, DailyArtistCollaborator, Guess } from "../managed/database";
 
 export class GuessViewModel extends ViewModel<Guess> {
 	id;
@@ -8,6 +8,18 @@ export class GuessViewModel extends ViewModel<Guess> {
 	// 'correct', 'collaborator' or 'wrong'
 	result;
 	graphIndex;
+
+	// songs made with the daily artist, only set for collaborators
+	collaborationCount;
+
+	artist: ArtistViewModel;
+}
+
+export class CollaboratorViewModel extends ViewModel<DailyArtistCollaborator> {
+	id;
+
+	// songs made with the daily artist
+	count;
 
 	artist: ArtistViewModel;
 }

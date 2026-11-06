@@ -1,6 +1,6 @@
-import { DbClient, QueryUUID } from "vlquery";
+import { QueryUUID } from "vlquery";
 import { Manager } from "vlserver";
-import { Artist, DailyArtist, DbContext, Guess } from "../managed/database";
+import { Artist, DailyArtist, DailyArtistCollaborator, DbContext, Guess } from "../managed/database";
 import { PlayerContext } from "../player/context";
 import { createSeed, seededShuffle } from "../random";
 
@@ -84,10 +84,10 @@ export class QuizManager extends Manager {
 			return stored;
 		}
 
-		await this.storeCollaborators(dailyArtist.id, await this.calculateCollaborators(await dailyArtist.artist.fetch()));
+		const collaborators = await this.calculateCollaborators(await dailyArtist.artist.fetch());
+		await this.storeCollaborators(dailyArtist.id, collaborators);
 
-		// read back instead of returning the calculated ones, a concurrent request might have stored its graph first
-		return await this.findStoredCollaborators(dailyArtist.id);
+		return collaborators;
 	}
 
 	// the players guesses of the day in the order they were made
@@ -285,19 +285,16 @@ export class QuizManager extends Manager {
 		return await Promise.all(stored.map(collaborator => collaborator.artist.fetch()));
 	}
 
-	// stored in a single statement, so concurrent requests never read a partially stored graph
-	// the first stored graph wins, the ranking is deterministic so both requests calculate the same one anyways
+	// a concurrent first request calculates the same graph, rows failing on the unique constraint were stored by that request
 	private async storeCollaborators(dailyArtistId: string, collaborators: Artist[]) {
-		if (!collaborators.length) {
-			return;
-		}
+		await Promise.allSettled(collaborators.map((artist, rank) => {
+			const collaborator = new DailyArtistCollaborator();
+			collaborator.dailyArtistId = dailyArtistId;
+			collaborator.artistId = artist.id;
+			collaborator.rank = rank;
 
-		await DbClient.query(`
-			INSERT INTO daily_artist_collaborator (daily_artist_id, artist_id, rank)
-			SELECT $1::uuid, collaborator.artist_id, collaborator.rank - 1
-			FROM unnest($2::uuid[]) WITH ORDINALITY AS collaborator (artist_id, rank)
-			ON CONFLICT DO NOTHING
-		`, [dailyArtistId, collaborators.map(collaborator => collaborator.id)]);
+			return collaborator.create();
+		}));
 	}
 
 	// collaborations are stored in one direction only, check both and count every collaborator once

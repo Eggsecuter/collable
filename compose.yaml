@@ -1,0 +1,12 @@
+services:
+  collable:
+    build:
+      context: .
+      dockerfile: dockerfile
+    image: collable
+    container_name: collable
+    restart: unless-stopped
+    ports:
+      - "7060:7060"
+    env_file:
+      - ${COLLABLE_ENV:-~/.config/collable/collable.env}

@@ -120,6 +120,17 @@ export class ManagedServer extends BaseServer {
 		);
 
 		this.expose(
+			"EwZGE2bm9nbGtoNTdoeXJ4bnM0YWZrY3",
+			{
+			"drbnM5eW4xMWJ2bzhqYXFvdDFmNWswZ2": { type: "string", isArray: false, isOptional: false }
+			},
+			inject => inject.construct(QuizService),
+			(controller, params) => controller.getStatistics(
+				params["drbnM5eW4xMWJ2bzhqYXFvdDFmNWswZ2"]
+			)
+		);
+
+		this.expose(
 			"c2dzE2ZWZqdTZrZjpnamtqMD93enU4OW",
 			{
 			"tuc2Z2dm82YXluNGlhMmd1aWhjc3ZvZD": { type: "string", isArray: false, isOptional: false }

@@ -158,6 +158,39 @@ export class QuizManager extends Manager {
 		return await guess.create();
 	}
 
+	// how many players needed how many guesses, the last entry counts the players who did not find the artist
+	// players who are still guessing are left out, the player themselves is included once they are done
+	async getStatistics(day: string) {
+		const dailyArtistId = (await this.getDailyArtist(day)).id;
+
+		const guesses = await this.database.guess
+			.where(guess => guess.dailyArtistId.valueOf() == dailyArtistId)
+			.toArray();
+
+		const players = new Map<string, Guess[]>();
+
+		for (let guess of guesses) {
+			if (!players.has(guess.playerId)) {
+				players.set(guess.playerId, []);
+			}
+
+			players.get(guess.playerId).push(guess);
+		}
+
+		const counts = new Array(maximumGuesses + 1).fill(0);
+
+		for (let playerGuesses of players.values()) {
+			if (playerGuesses.some(guess => guess.result == 'correct')) {
+				// the quiz ends with the correct guess, so it is always the last one
+				counts[playerGuesses.length - 1]++;
+			} else if (playerGuesses.length >= maximumGuesses) {
+				counts[maximumGuesses]++;
+			}
+		}
+
+		return counts;
+	}
+
 	// the full name is only sent once the player is done, until then only the hint is available
 	async getSolution(day: string) {
 		if (!this.isFinished(await this.getGuesses(day))) {

@@ -41,6 +41,9 @@ export class HomePage extends Component {
 	collaborators: CollaboratorViewModel[];
 	solution: ArtistViewModel;
 
+	// players per guess count once the quiz is over, the last entry are the players who failed
+	statistics: number[];
+
 	// one entry per character of the solution, null for letters which are not revealed yet
 	hint: string[];
 	previousHint: string[];
@@ -109,6 +112,8 @@ export class HomePage extends Component {
 		if (this.finished) {
 			this.solution = await this.quizService.getSolution(this.day);
 			this.hint = [...this.solution.name];
+
+			this.statistics = await this.quizService.getStatistics(this.day);
 		} else {
 			this.hint = await this.quizService.getHint(this.day);
 		}
@@ -149,7 +154,30 @@ export class HomePage extends Component {
 					</ui-guess>;
 				})}
 			</ui-guesses>
+
+			{this.statistics ? this.renderStatistics() : null}
 		</ui-home>;
+	}
+
+	// how all players did including the player, whose row is highlighted
+	renderStatistics() {
+		const most = Math.max(1, ...this.statistics);
+		const own = this.solved ? this.guesses.length - 1 : maximumGuesses;
+
+		return <ui-statistics>
+			<ui-title>How everyone did</ui-title>
+
+			{this.statistics.map((count, index) => {
+				const bar = <ui-bar>{count}</ui-bar>;
+				bar.style.width = `${count / most * 100}%`;
+
+				return <ui-row ui-own={index == own} ui-failed={index == maximumGuesses}>
+					<ui-label>{index == maximumGuesses ? 'Failed' : index + 1}</ui-label>
+
+					<ui-track>{bar}</ui-track>
+				</ui-row>;
+			})}
+		</ui-statistics>;
 	}
 
 	// the arrows keep their place on the first day, so the date does not shift

@@ -1,4 +1,4 @@
-import { alignItems, attribute, background, border, borderRadius, boxShadow, child, color, cursor, display, flexDirection, flexGrow, fontSize, gap, gridTemplateColumns, height, hover, insetInline, left, margin, maxWidth, minHeight, outline, overflow, padding, percentage, placeholder, position, px, rem, repeat, stroke, strokeWidth, textAlign, textOverflow, top, whiteSpace, width, zIndex, vh, bottom, fr, Keyframes, translateX, transform, opacity, hex, fontFamily, milliseconds, empty, focus, borderLeft, min, minMax, scale, flexWrap, justifyContent, textTransform, borderBottom, focusWithin, minWidth, marginRight, flexShrink, media } from "@acryps/style";
+import { alignItems, attribute, background, border, borderRadius, boxShadow, child, color, cursor, display, flexDirection, flexGrow, fontSize, gap, gridTemplateColumns, height, hover, insetInline, left, margin, maxWidth, minHeight, outline, overflow, padding, percentage, placeholder, position, px, rem, repeat, stroke, strokeWidth, textAlign, textOverflow, top, whiteSpace, width, zIndex, vh, bottom, fr, Keyframes, translateX, transform, opacity, hex, fontFamily, milliseconds, empty, focus, borderLeft, min, minMax, scale, flexWrap, justifyContent, textTransform, borderBottom, focusWithin, minWidth, marginRight, flexShrink, media, marginBottom, boxSizing } from "@acryps/style";
 import { highlightDuration } from "../quiz/graph";
 import { box, boxRadius, colorBackground, colorBackgroundDimmed, colorBorder, colorWarning, colorBoxShadow, colorError, colorHighlight, colorPrimary, colorText, colorTextDimmed, fontSizeDetail, fontSizeSubtitle, fontSizeTitle, widthMobile } from "../index.style";
 
@@ -452,6 +452,79 @@ export const homeStyle = () => child('ui-home')(
 			attribute('ui-empty')(
 				borderLeft(px(1), 'solid', colorBorder),
 				opacity(0.4)
+			)
+		)
+	),
+
+	child('ui-statistics')(
+		display('flex'),
+		flexDirection('column'),
+		gap(rem(0.4)),
+		padding(rem(1.5)),
+		box(),
+
+		child('ui-title')(
+			display('block'),
+			marginBottom(rem(0.5)),
+			color(colorTextDimmed)
+		),
+
+		child('ui-row')(
+			display('flex'),
+			gap(rem(0.75)),
+			alignItems('center'),
+
+			child('ui-label')(
+				flexShrink(0),
+				width(rem(3.5)),
+				textAlign('right'),
+				color(colorTextDimmed),
+				fontSize(fontSizeDetail)
+			),
+
+			child('ui-track')(
+				display('block'),
+				flexGrow(1),
+
+				// rows without players still show their count
+				child('ui-bar')(
+					display('block'),
+					minWidth(rem(1.5)),
+					padding(rem(0.2), rem(0.5)),
+					borderRadius(rem(0.3)),
+					boxSizing('border-box'),
+
+					background(colorBorder),
+					textAlign('right'),
+					fontSize(fontSizeDetail)
+				)
+			),
+
+			attribute('ui-own')(
+				child('ui-label')(
+					color(colorPrimary)
+				),
+
+				child('ui-track')(
+					child('ui-bar')(
+						background(colorPrimary),
+						color(colorBackground)
+					)
+				)
+			),
+
+			attribute('ui-failed')(
+				attribute('ui-own')(
+					child('ui-label')(
+						color(colorError)
+					),
+
+					child('ui-track')(
+						child('ui-bar')(
+							background(colorError)
+						)
+					)
+				)
 			)
 		)
 	)

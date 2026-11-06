@@ -281,6 +281,27 @@ export class QuizService {
 		});
 	}
 
+	async getStatistics(day: string): Promise<Array<number>> {
+		const $data = new FormData();
+		$data.append("drbnM5eW4xMWJ2bzhqYXFvdDFmNWswZ2", Service.stringify(day))
+
+		return await fetch(Service.toURL("EwZGE2bm9nbGtoNTdoeXJ4bnM0YWZrY3"), {
+			method: "post",
+			credentials: "include",
+			body: $data
+		}).then(res => res.json()).then(r => {
+			if ("data" in r) {
+				const d = r.data;
+
+				return d.map(d => d === null ? null : +d);
+			} else if ("aborted" in r) {
+				throw new Error("request aborted by server");
+			} else if ("error" in r) {
+				throw new Error(r.error);
+			}
+		});
+	}
+
 	async getSolution(day: string): Promise<ArtistViewModel> {
 		const $data = new FormData();
 		$data.append("tuc2Z2dm82YXluNGlhMmd1aWhjc3ZvZD", Service.stringify(day))

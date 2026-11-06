@@ -40,6 +40,11 @@ export class QuizService extends Service {
 		return await this.manager.getHint(day);
 	}
 
+	// number of players per guess count, the last entry are the players who failed
+	async getStatistics(day: string): Promise<number[]> {
+		return await this.manager.getStatistics(day);
+	}
+
 	async getSolution(day: string) {
 		return new ArtistViewModel(await this.manager.getSolution(day));
 	}

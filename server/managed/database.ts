@@ -10,7 +10,8 @@ export class ArtistQueryProxy extends QueryProxy {
 }
 
 export class Artist extends Entity<ArtistQueryProxy> {
-	dailyArtists: PrimaryReference<DailyArtist, DailyArtistQueryProxy>;
+	dailyArtistCollaborators: PrimaryReference<DailyArtistCollaborator, DailyArtistCollaboratorQueryProxy>;
+		dailyArtists: PrimaryReference<DailyArtist, DailyArtistQueryProxy>;
 		guesses: PrimaryReference<Guess, GuessQueryProxy>;
 		fromCollaborations: PrimaryReference<Collaboration, CollaborationQueryProxy>;
 		toCollaborations: PrimaryReference<Collaboration, CollaborationQueryProxy>;
@@ -41,6 +42,7 @@ export class Artist extends Entity<ArtistQueryProxy> {
 	constructor() {
 		super();
 
+		this.dailyArtistCollaborators = new PrimaryReference<DailyArtistCollaborator, DailyArtistCollaboratorQueryProxy>(this, "artistId", DailyArtistCollaborator);
 		this.dailyArtists = new PrimaryReference<DailyArtist, DailyArtistQueryProxy>(this, "artistId", DailyArtist);
 		this.guesses = new PrimaryReference<Guess, GuessQueryProxy>(this, "artistId", Guess);
 		this.fromCollaborations = new PrimaryReference<Collaboration, CollaborationQueryProxy>(this, "fromArtistId", Collaboration);
@@ -126,7 +128,8 @@ export class DailyArtistQueryProxy extends QueryProxy {
 
 export class DailyArtist extends Entity<DailyArtistQueryProxy> {
 	get artist(): Partial<ForeignReference<Artist>> { return this.$artist; }
-	guesses: PrimaryReference<Guess, GuessQueryProxy>;
+	collaborators: PrimaryReference<DailyArtistCollaborator, DailyArtistCollaboratorQueryProxy>;
+		guesses: PrimaryReference<Guess, GuessQueryProxy>;
 		artistId: string;
 	day: Date;
 	hintSeed: number;
@@ -149,7 +152,8 @@ export class DailyArtist extends Entity<DailyArtistQueryProxy> {
 		super();
 
 		this.$artist = new ForeignReference<Artist>(this, "artistId", Artist);
-	this.guesses = new PrimaryReference<Guess, GuessQueryProxy>(this, "dailyArtistId", Guess);
+	this.collaborators = new PrimaryReference<DailyArtistCollaborator, DailyArtistCollaboratorQueryProxy>(this, "dailyArtistId", DailyArtistCollaborator);
+		this.guesses = new PrimaryReference<Guess, GuessQueryProxy>(this, "dailyArtistId", Guess);
 	}
 
 	private $artist: ForeignReference<Artist>;
@@ -161,6 +165,69 @@ export class DailyArtist extends Entity<DailyArtistQueryProxy> {
 			this.artistId = value.id as string;
 		} else {
 			this.artistId = null;
+		}
+	}
+
+	
+}
+			
+export class DailyArtistCollaboratorQueryProxy extends QueryProxy {
+	get artist(): Partial<ArtistQueryProxy> { throw new Error("Invalid use of QueryModels. QueryModels cannot be used during runtime"); }
+	get dailyArtist(): Partial<DailyArtistQueryProxy> { throw new Error("Invalid use of QueryModels. QueryModels cannot be used during runtime"); }
+	get artistId(): Partial<QueryUUID> { throw new Error("Invalid use of QueryModels. QueryModels cannot be used during runtime"); }
+	get dailyArtistId(): Partial<QueryUUID> { throw new Error("Invalid use of QueryModels. QueryModels cannot be used during runtime"); }
+	get rank(): Partial<QueryNumber> { throw new Error("Invalid use of QueryModels. QueryModels cannot be used during runtime"); }
+}
+
+export class DailyArtistCollaborator extends Entity<DailyArtistCollaboratorQueryProxy> {
+	get artist(): Partial<ForeignReference<Artist>> { return this.$artist; }
+	get dailyArtist(): Partial<ForeignReference<DailyArtist>> { return this.$dailyArtist; }
+	artistId: string;
+	dailyArtistId: string;
+	declare id: string;
+	rank: number;
+
+	$$meta = {
+		source: "daily_artist_collaborator",
+		columns: {
+			artistId: { type: "uuid", name: "artist_id" },
+			dailyArtistId: { type: "uuid", name: "daily_artist_id" },
+			id: { type: "uuid", name: "id" },
+			rank: { type: "int4", name: "rank" }
+		},
+		get set(): DbSet<DailyArtistCollaborator, DailyArtistCollaboratorQueryProxy> {
+			return new DbSet<DailyArtistCollaborator, DailyArtistCollaboratorQueryProxy>(DailyArtistCollaborator, null);
+		}
+	};
+
+	constructor() {
+		super();
+
+		this.$artist = new ForeignReference<Artist>(this, "artistId", Artist);
+	this.$dailyArtist = new ForeignReference<DailyArtist>(this, "dailyArtistId", DailyArtist);
+	}
+
+	private $artist: ForeignReference<Artist>;
+
+	set artist(value: Partial<ForeignReference<Artist>>) {
+		if (value) {
+			if (!value.id) { throw new Error("Invalid null id. Save the referenced model prior to creating a reference to it."); }
+
+			this.artistId = value.id as string;
+		} else {
+			this.artistId = null;
+		}
+	}
+
+	private $dailyArtist: ForeignReference<DailyArtist>;
+
+	set dailyArtist(value: Partial<ForeignReference<DailyArtist>>) {
+		if (value) {
+			if (!value.id) { throw new Error("Invalid null id. Save the referenced model prior to creating a reference to it."); }
+
+			this.dailyArtistId = value.id as string;
+		} else {
+			this.dailyArtistId = null;
 		}
 	}
 
@@ -244,12 +311,14 @@ export class DbContext {
 	artist: DbSet<Artist, ArtistQueryProxy>;
 	collaboration: DbSet<Collaboration, CollaborationQueryProxy>;
 	dailyArtist: DbSet<DailyArtist, DailyArtistQueryProxy>;
+	dailyArtistCollaborator: DbSet<DailyArtistCollaborator, DailyArtistCollaboratorQueryProxy>;
 	guess: DbSet<Guess, GuessQueryProxy>;
 
 	constructor(private runContext: RunContext) {
 		this.artist = new DbSet<Artist, ArtistQueryProxy>(Artist, this.runContext);
 		this.collaboration = new DbSet<Collaboration, CollaborationQueryProxy>(Collaboration, this.runContext);
 		this.dailyArtist = new DbSet<DailyArtist, DailyArtistQueryProxy>(DailyArtist, this.runContext);
+		this.dailyArtistCollaborator = new DbSet<DailyArtistCollaborator, DailyArtistCollaboratorQueryProxy>(DailyArtistCollaborator, this.runContext);
 		this.guess = new DbSet<Guess, GuessQueryProxy>(Guess, this.runContext);
 	}
 

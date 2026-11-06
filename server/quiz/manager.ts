@@ -1,4 +1,4 @@
-import { QueryUUID } from "vlquery";
+import { DbClient, QueryUUID } from "vlquery";
 import { Manager } from "vlserver";
 import { Artist, DailyArtist, DbContext, Guess } from "../managed/database";
 import { PlayerContext } from "../player/context";
@@ -74,33 +74,20 @@ export class QuizManager extends Manager {
 		}
 	}
 
-	// the collaborators of the days artist with the most songs together
+	// the collaborators shown in the graph of the day
+	// calculated on the first request of the day and stored, every later request reads the stored graph
 	async getCollaborators(day: string) {
-		const artist = await this.getArtist(day);
+		const dailyArtist = await this.getDailyArtist(day);
+		const stored = await this.findStoredCollaborators(dailyArtist.id);
 
-		const collaborators = await this.findCollaborators([artist.id]);
-		const counts = collaborators.get(artist.id) ?? new Map<string, number>();
+		if (stored.length) {
+			return stored;
+		}
 
-		// the few artists without follower counts are obscure anyways
-		const candidates = await this.database.artist
-			.where(collaborator => (collaborator.id as QueryUUID).includedIn([...counts.keys()]) && collaborator.followers.valueOf() != null)
-			.toArray();
+		await this.storeCollaborators(dailyArtist.id, await this.calculateCollaborators(await dailyArtist.artist.fetch()));
 
-		// counts range from 1 to thousands, the logarithm keeps a few close collaborators from outweighing popularity
-		// both parts are relative to the best collaborator, so each weighs the same for every artist
-		const maximumCount = Math.max(1, ...candidates.map(candidate => counts.get(candidate.id)));
-		const maximumPopularity = Math.max(1, ...candidates.map(candidate => candidate.popularity ?? 0));
-
-		const score = (collaborator: Artist) =>
-			countWeight * Math.log(1 + counts.get(collaborator.id)) / Math.log(1 + maximumCount)
-			+ (1 - countWeight) * (collaborator.popularity ?? 0) / maximumPopularity;
-
-		// the id makes the order unique, so every player sees the same graph
-		return candidates
-			.map(collaborator => ({ collaborator, score: score(collaborator) }))
-			.sort((a, b) => b.score - a.score || (a.collaborator.id < b.collaborator.id ? -1 : 1))
-			.slice(0, maximumCollaborators)
-			.map(scored => scored.collaborator);
+		// read back instead of returning the calculated ones, a concurrent request might have stored its graph first
+		return await this.findStoredCollaborators(dailyArtist.id);
 	}
 
 	// the players guesses of the day in the order they were made
@@ -259,6 +246,58 @@ export class QuizManager extends Manager {
 		}
 
 		return pool[Math.floor(Math.random() * pool.length)];
+	}
+
+	// the collaborators of the artist with the most songs together
+	private async calculateCollaborators(artist: Artist) {
+		const collaborators = await this.findCollaborators([artist.id]);
+		const counts = collaborators.get(artist.id) ?? new Map<string, number>();
+
+		// the few artists without follower counts are obscure anyways
+		const candidates = await this.database.artist
+			.where(collaborator => (collaborator.id as QueryUUID).includedIn([...counts.keys()]) && collaborator.followers.valueOf() != null)
+			.toArray();
+
+		// counts range from 1 to thousands, the logarithm keeps a few close collaborators from outweighing popularity
+		// both parts are relative to the best collaborator, so each weighs the same for every artist
+		const maximumCount = Math.max(1, ...candidates.map(candidate => counts.get(candidate.id)));
+		const maximumPopularity = Math.max(1, ...candidates.map(candidate => candidate.popularity ?? 0));
+
+		const score = (collaborator: Artist) =>
+			countWeight * Math.log(1 + counts.get(collaborator.id)) / Math.log(1 + maximumCount)
+			+ (1 - countWeight) * (collaborator.popularity ?? 0) / maximumPopularity;
+
+		// the id makes the order unique, so every player sees the same graph
+		return candidates
+			.map(collaborator => ({ collaborator, score: score(collaborator) }))
+			.sort((a, b) => b.score - a.score || (a.collaborator.id < b.collaborator.id ? -1 : 1))
+			.slice(0, maximumCollaborators)
+			.map(scored => scored.collaborator);
+	}
+
+	private async findStoredCollaborators(dailyArtistId: string) {
+		const stored = await this.database.dailyArtistCollaborator
+			.where(collaborator => collaborator.dailyArtistId.valueOf() == dailyArtistId)
+			.orderByAscending(collaborator => collaborator.rank)
+			.include(collaborator => collaborator.artist)
+			.toArray();
+
+		return await Promise.all(stored.map(collaborator => collaborator.artist.fetch()));
+	}
+
+	// stored in a single statement, so concurrent requests never read a partially stored graph
+	// the first stored graph wins, the ranking is deterministic so both requests calculate the same one anyways
+	private async storeCollaborators(dailyArtistId: string, collaborators: Artist[]) {
+		if (!collaborators.length) {
+			return;
+		}
+
+		await DbClient.query(`
+			INSERT INTO daily_artist_collaborator (daily_artist_id, artist_id, rank)
+			SELECT $1::uuid, collaborator.artist_id, collaborator.rank - 1
+			FROM unnest($2::uuid[]) WITH ORDINALITY AS collaborator (artist_id, rank)
+			ON CONFLICT DO NOTHING
+		`, [dailyArtistId, collaborators.map(collaborator => collaborator.id)]);
 	}
 
 	// collaborations are stored in one direction only, check both and count every collaborator once
